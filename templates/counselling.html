@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Counselling Portal - SheSecure{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='counselling.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="counselling-container">
+    <!-- Hero Section -->
+    <div class="counselling-hero">
+        <div class="hero-content">
+            <h1>💚 Support & Counselling</h1>
+            <p>A safe, confidential space for mental health, legal guidance, and emotional support</p>
+            <div class="hero-badges">
+                <span class="badge">🔒 100% Private</span>
+                <span class="badge">🕵️ Completely Anonymous</span>
+                <span class="badge">🤝 Professional Support</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Selection -->
+    <div class="container counselling-main">
+        <div class="service-tabs">
+            <button class="service-tab active" data-service="mental-health" aria-label="Mental Health Support">
+                <span class="tab-icon">🧠</span>
+                <span class="tab-text">Mental Health</span>
+            </button>
+            <button class="service-tab" data-service="legal" aria-label="Legal Guidance">
+                <span class="tab-icon">⚖️</span>
+                <span class="tab-text">Legal Guidance</span>
+            </button>
+            <button class="service-tab" data-service="crisis" aria-label="Crisis Support">
+                <span class="tab-icon">🆘</span>
+                <span class="tab-text">Crisis Support</span>
+            </button>
+            <button class="service-tab" data-service="ai-chat" aria-label="AI Support">
+                <span class="tab-icon">🤖</span>
+                <span class="tab-text">AI Support</span>
+            </button>
+            <button class="service-tab" data-service="resources" aria-label="Resources">
+                <span class="tab-icon">📚</span>
+                <span class="tab-text">Resources</span>
+            </button>
+        </div>
+
+        <!-- Mental Health Support -->
+        <div class="service-content active" id="mental-health-content">
+            <div class="content-grid">
+                <div class="option-card fade-in">
+                    <div class="option-header">
+                        <span class="option-icon">💬</span>
+                        <h3>Live Chat Counselling</h3>
+                    </div>
+                    <p class="option-description">Connect with a professional counsellor in real-time. Anonymous and secure.</p>
+                    <ul class="option-features">
+                        <li>✓ Licensed Counsellors</li>
+                        <li>✓ 24/7 Available</li>
+                        <li>✓ Encrypted Chat</li>
+                        <li>✓ Anonymous Sessions</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="startLiveChat()">Start Chat Session</button>
+                </div>
+
+                <div class="option-card fade-in" style="animation-delay: 0.1s;">
+                    <div class="option-header">
+                        <span class="option-icon">📅</span>
+                        <h3>Book Appointment</h3>
+                    </div>
+                    <p class="option-description">Schedule a detailed 1-on-1 session with a mental health professional.</p>
+                    <ul class="option-features">
+                        <li>✓ 50-Minute Sessions</li>
+                        <li>✓ Flexible Scheduling</li>
+                        <li>✓ Video or Audio</li>
+                        <li>✓ Confidential Records</li>
+                    </ul>
+                    <button class="btn btn-secondary" onclick="openAppointmentBooking()">Book Now</button>
+                </div>
+
+                <div class="option-card fade-in" style="animation-delay: 0.2s;">
+                    <div class="option-header">
+                        <span class="option-icon">📖</span>
+                        <h3>Self-Help Resources</h3>
+                    </div>
+                    <p class="option-description">Guided exercises, worksheets, and educational materials for self-care.</p>
+                    <ul class="option-features">
+                        <li>✓ Curated Content</li>
+                        <li>✓ Works Offline</li>
+                        <li>✓ Anxiety Management</li>
+                        <li>✓ Stress Relief</li>
+                    </ul>
+                    <button class="btn btn-accent" onclick="viewResources('mental-health')">Access Resources</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legal Guidance -->
+        <div class="service-content" id="legal-content">
+            <div class="content-grid">
+                <div class="option-card fade-in">
+                    <div class="option-header">
+                        <span class="option-icon">👨‍⚖️</span>
+                        <h3>Legal Consultation</h3>
+                    </div>
+                    <p class="option-description">Speak with an experienced legal professional about your rights and options.</p>
+                    <ul class="option-features">
+                        <li>✓ Expert Lawyers</li>
+                        <li>✓ Rights Guidance</li>
+                        <li>✓ Case Support</li>
+                        <li>✓ Confidential</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="startLegalChat()">Consult Lawyer</button>
+                </div>
+
+                <div class="option-card fade-in" style="animation-delay: 0.1s;">
+                    <div class="option-header">
+                        <span class="option-icon">📋</span>
+                        <h3>Know Your Rights</h3>
+                    </div>
+                    <p class="option-description">Educational resources about legal protections and your rights.</p>
+                    <ul class="option-features">
+                        <li>✓ Law Summaries</li>
+                        <li>✓ Protection Acts</li>
+                        <li>✓ Reporting Guide</li>
+                        <li>✓ FAQ & Help</li>
+                    </ul>
+                    <button class="btn btn-secondary" onclick="viewResources('legal')">Learn More</button>
+                </div>
+
+                <div class="option-card fade-in" style="animation-delay: 0.2s;">
+                    <div class="option-header">
+                        <span class="option-icon">📞</span>
+                        <h3>Resource Directory</h3>
+                    </div>
+                    <p class="option-description">Find legal aid organizations, NGOs, and support networks near you.</p>
+                    <ul class="option-features">
+                        <li>✓ NGO Directory</li>
+                        <li>✓ Legal Aid</li>
+                        <li>✓ Hotlines</li>
+                        <li>✓ Local Help</li>
+                    </ul>
+                    <button class="btn btn-accent" onclick="viewDirectory()">Find Help</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crisis Support -->
+        <div class="service-content" id="crisis-content">
+            <div class="crisis-alert">
+                <span class="alert-icon">⚠️</span>
+                <div class="alert-content">
+                    <strong>In immediate danger?</strong> Call emergency services (911/112) or your local hotline
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <div class="option-card crisis-card fade-in">
+                    <div class="option-header">
+                        <span class="option-icon">🆘</span>
+                        <h3>Emotional Crisis Support</h3>
+                    </div>
+                    <p class="option-description">Immediate support if you're in emotional distress or having thoughts of self-harm.</p>
+                    <ul class="option-features">
+                        <li>✓ Immediate Response</li>
+                        <li>✓ Crisis Trained</li>
+                        <li>✓ De-escalation Support</li>
+                        <li>✓ Anonymous Safe Space</li>
+                    </ul>
+                    <button class="btn btn-danger" onclick="activateCrisisMode()">Get Crisis Support NOW</button>
+                </div>
+
+                <div class="option-card fade-in" style="animation-delay: 0.1s;">
+                    <div class="option-header">
+                        <span class="option-icon">📱</span>
+                        <h3>Crisis Hotlines</h3>
+                    </div>
+                    <p class="option-description">Connect immediately with trained crisis counsellors via phone.</p>
+                    <ul class="option-features">
+                        <li>✓ 24/7 Available</li>
+                        <li>✓ Multilingual Support</li>
+                        <li>✓ Free & Anonymous</li>
+                        <li>✓ Always Open</li>
+                    </ul>
+                    <button class="btn btn-secondary" onclick="viewCrisisHotlines()">View Hotlines</button>
+                </div>
+
+                <div class="option-card fade-in" style="animation-delay: 0.2s;">
+                    <div class="option-header">
+                        <span class="option-icon">🧘</span>
+                        <h3>Quick Mindfulness</h3>
+                    </div>
+                    <p class="option-description">Guided breathing exercises and grounding techniques for immediate calm.</p>
+                    <ul class="option-features">
+                        <li>✓ Guided Exercises</li>
+                        <li>✓ Works Offline</li>
+                        <li>✓ 5-30 Minutes</li>
+                        <li>✓ Science-Backed</li>
+                    </ul>
+                    <button class="btn btn-accent" onclick="startMindfulness()">Take a Break</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Emotional Support -->
+        <div class="service-content" id="ai-chat-content">
+            <div class="ai-chat-container">
+                <div class="ai-chat-header">
+                    <h3>💚 Your AI Support Companion</h3>
+                    <p>Available 24/7 for emotional support and guidance</p>
+                </div>
+
+                <div class="ai-chat-box" id="ai-chat-box">
+                    <div class="chat-message bot-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <p>Hi! I'm here to listen and support you. How are you feeling today? You can share anything, and I'm here to help.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-chat-input">
+                    <input type="text" id="ai-message-input" placeholder="Share your feelings... (anonymous & private)" maxlength="500">
+                    <button onclick="sendAIMessage()" class="btn-send">Send</button>
+                </div>
+
+                <div class="ai-features">
+                    <button class="feature-btn" onclick="askAIAbout('anxiety')">💭 Anxiety</button>
+                    <button class="feature-btn" onclick="askAIAbout('stress')">😰 Stress</button>
+                    <button class="feature-btn" onclick="askAIAbout('relationships')">💕 Relationships</button>
+                    <button class="feature-btn" onclick="askAIAbout('confidence')">🌟 Confidence</button>
+                </div>
+
+                <div class="session-controls">
+                    <button class="control-btn" onclick="clearChatHistory()">Clear History</button>
+                    <button class="control-btn" onclick="downloadSession()">Download Session</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Resources -->
+        <div class="service-content" id="resources-content">
+            <div class="resources-grid">
+                <div class="resource-card fade-in">
+                    <h4>📖 Self-Care Guides</h4>
+                    <p>Comprehensive guides on managing stress, anxiety, and emotional wellbeing.</p>
+                    <ul>
+                        <li>Stress Management Techniques</li>
+                        <li>Sleep & Rest Tips</li>
+                        <li>Healthy Coping Strategies</li>
+                        <li>Daily Affirmations</li>
+                    </ul>
+                    <button class="btn btn-small" onclick="openResource('selfcare')">Read Now</button>
+                </div>
+
+                <div class="resource-card fade-in" style="animation-delay: 0.1s;">
+                    <h4>🎯 Crisis Action Plan</h4>
+                    <p>Personalized emergency plan with your coping strategies and support network.</p>
+                    <ul>
+                        <li>Build Action Plan</li>
+                        <li>Set Coping Cards</li>
+                        <li>Emergency Contacts</li>
+                        <li>Safe Space Ideas</li>
+                    </ul>
+                    <button class="btn btn-small" onclick="buildActionPlan()">Create Plan</button>
+                </div>
+
+                <div class="resource-card fade-in" style="animation-delay: 0.2s;">
+                    <h4>📚 Educational Materials</h4>
+                    <p>Learn about mental health conditions, treatments, and recovery strategies.</p>
+                    <ul>
+                        <li>Mental Health Topics</li>
+                        <li>Treatment Options</li>
+                        <li>Recovery Stories</li>
+                        <li>Expert Articles</li>
+                    </ul>
+                    <button class="btn btn-small" onclick="viewEducationalContent()">Explore</button>
+                </div>
+
+                <div class="resource-card fade-in" style="animation-delay: 0.3s;">
+                    <h4>🎵 Calming Tools</h4>
+                    <p>Meditation guides, breathing exercises, and mindfulness practices.</p>
+                    <ul>
+                        <li>Guided Meditations</li>
+                        <li>Breathing Exercises</li>
+                        <li>Relaxation Music</li>
+                        <li>Grounding Techniques</li>
+                    </ul>
+                    <button class="btn btn-small" onclick="openCalmingTools()">Start Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Management & Privacy -->
+    <div class="container privacy-section">
+        <div class="privacy-card">
+            <h3>🔒 Your Privacy & Control</h3>
+            <div class="privacy-controls">
+                <label class="privacy-option">
+                    <input type="checkbox" checked id="auto-clear-sessions">
+                    <span>Auto-clear session history on logout</span>
+                </label>
+                <label class="privacy-option">
+                    <input type="checkbox" checked id="encrypt-storage">
+                    <span>Encrypt stored messages locally</span>
+                </label>
+                <label class="privacy-option">
+                    <input type="checkbox" id="share-with-professionals">
+                    <span>Allow professionals to access session notes</span>
+                </label>
+            </div>
+            <div class="privacy-actions">
+                <button class="btn btn-small" onclick="viewSessionHistory()">View History</button>
+                <button class="btn btn-small" onclick="exportSessions()">Export Sessions</button>
+                <button class="btn btn-small btn-danger" onclick="deleteAllData()">Delete All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calming Sidebar -->
+    <div class="sidebar-affirmation">
+        <div class="affirmation-card">
+            <p id="daily-affirmation">You are brave, resilient, and worthy of support.</p>
+            <button class="btn-refresh" onclick="getNewAffirmation()">✨ New</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/counselling.js') }}"></script>
+{% endblock %}

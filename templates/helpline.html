@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Helplines - SheSecure{% endblock %}
+
+{% block content %}
+<div class="container helpline-container">
+    <div class="helpline-header fade-in">
+        <h1>📞 Emergency Helplines & Contacts</h1>
+        <p>Quick access to resources and emergency support</p>
+    </div>
+
+    <!-- Emergency Helplines -->
+    <div class="helplines-section fade-in-up">
+        <h2>Emergency Helplines</h2>
+        <div class="helplines-grid">
+            <div class="helpline-card">
+                <h3>Police</h3>
+                <a href="tel:100" class="helpline-number">100</a>
+                <p>Emergency police assistance</p>
+            </div>
+            <div class="helpline-card">
+                <h3>Women Helpline</h3>
+                <a href="tel:1091" class="helpline-number">1091</a>
+                <p>Women-specific emergency support</p>
+            </div>
+            <div class="helpline-card">
+                <h3>Ambulance</h3>
+                <a href="tel:102" class="helpline-number">102</a>
+                <p>Medical emergency</p>
+            </div>
+            <div class="helpline-card">
+                <h3>Childline</h3>
+                <a href="tel:1098" class="helpline-number">1098</a>
+                <p>Child protection services</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Contacts -->
+    <div class="contacts-section fade-in-up">
+        <h2>My Trusted Contacts</h2>
+        <button type="button" class="btn btn-primary" id="add-contact-btn">+ Add Contact</button>
+        
+        <form id="contact-form" class="contact-form" style="display: none; margin-top: 20px;">
+            <input type="text" id="contact-name" placeholder="Contact Name" required>
+            <input type="tel" id="contact-phone" placeholder="Phone Number" required>
+            <div class="form-buttons">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+            </div>
+        </form>
+
+        <div id="contacts-list" class="contacts-list"></div>
+    </div>
+</div>
+
+<style>
+.helpline-container {
+    padding: 60px 0;
+}
+
+.helpline-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.helpline-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 12px 0;
+}
+
+.helpline-header p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin: 0;
+    transition: color 0.3s ease;
+}
+
+.helplines-section,
+.contacts-section {
+    margin-bottom: 60px;
+}
+
+.helplines-section h2,
+.contacts-section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 24px;
+    transition: color 0.3s ease;
+}
+
+.helplines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.helpline-card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.helpline-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.helpline-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 12px 0;
+}
+
+.helpline-number {
+    display: inline-block;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent-2);
+    text-decoration: none;
+    margin-bottom: 8px;
+}
+
+.helpline-card p {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+}
+
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.contact-form input {
+    padding: 12px;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.form-buttons .btn {
+    flex: 1;
+    padding: 12px;
+}
+
+.contacts-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.contact-item {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.contact-info h4 {
+    margin: 0 0 4px 0;
+    color: var(--accent);
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.contact-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    transition: color 0.3s ease;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.contact-actions button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.btn-delete {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+@media (max-width: 768px) {
+    .helplines-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-buttons {
+        flex-direction: column;
+    }
+
+    .contact-item {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .contact-actions {
+        width: 100%;
+    }
+
+    .contact-actions button {
+        flex: 1;
+    }
+}
+</style>
+
+<script>
+let contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+
+function renderContacts() {
+    const list = document.getElementById('contacts-list');
+    list.innerHTML = contacts.map((contact, index) => `
+        <div class="contact-item">
+            <div class="contact-info">
+                <h4>${contact.name}</h4>
+                <p>${contact.phone}</p>
+            </div>
+            <div class="contact-actions">
+                <button class="btn-edit" onclick="editContact(${index})">Edit</button>
+                <button class="btn-delete" onclick="deleteContact(${index})">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function deleteContact(index) {
+    contacts.splice(index, 1);
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+    renderContacts();
+}
+
+function editContact(index) {
+    const contact = contacts[index];
+    document.getElementById('contact-name').value = contact.name;
+    document.getElementById('contact-phone').value = contact.phone;
+    document.getElementById('contact-form').style.display = 'flex';
+    deleteContact(index);
+}
+
+document.getElementById('add-contact-btn').addEventListener('click', function() {
+    document.getElementById('contact-form').style.display = 'flex';
+});
+
+document.getElementById('cancel-btn').addEventListener('click', function() {
+    document.getElementById('contact-form').style.display = 'none';
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-phone').value = '';
+});
+
+document.getElementById('contact-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    contacts.push({
+        name: document.getElementById('contact-name').value,
+        phone: document.getElementById('contact-phone').value
+    });
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-phone').value = '';
+    document.getElementById('contact-form').style.display = 'none';
+    renderContacts();
+});
+
+// Initial render
+renderContacts();
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>✨ SheSecure - All Features & Tools</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav>
+        <div class="container nav-inner">
+            <a class="brand" href="/home">SheSecure</a>
+            <div class="nav-links">
+                <a href="/home">Home</a>
+                <a href="#predictor">Predictor</a>
+                <a href="#location-section">Location</a>
+                <a href="#helpline-section">Helplines</a>
+                <!-- All-in-one removed -->
+            </div>
+
+            <div class="taskbar">
+                <div class="taskbar-item">
+                    <label for="lang-select" class="sr-only">Language</label>
+                    <select id="lang-select" aria-label="Language selector">
+                        <option value="en">English</option>
+                        <option value="hi">हिन्दी</option>
+                        <option value="bn">বাংলা</option>
+                    </select>
+                </div>
+                <div class="taskbar-item">
+                    <button id="open-chatbot" class="btn small muted">Chatbot</button>
+                </div>
+                <div class="taskbar-item auth">
+                    <button id="open-login" class="btn ghost">Login</button>
+                    <button id="open-signup" class="btn ghost">Sign up</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header id="top" class="hero">
+            <h1>SheSecure — All Features</h1>
+            <p>Use this single page to access predictor, location check, trusted contacts, and helplines.</p>
+        </header>
+
+        <section id="predictor" class="form-wrapper section-spaced">
+            <h2>📊 Risk Assessment Tool</h2>
+            <form action="/predict" method="POST">
+                <label>Crime Count</label>
+                <input type="number" name="crime" placeholder="Crime Count" required>
+
+                <label>Hour (0–23)</label>
+                <input type="number" name="hour" placeholder="Hour (0–23)" required>
+
+                <label>Crowd Density (0–1)</label>
+                <input type="number" step="0.1" name="crowd" placeholder="Crowd Density (0–1)" required>
+
+                <label>Weather</label>
+                <select name="weather" required>
+                    <option value="0">Clear</option>
+                    <option value="1">Rainy</option>
+                </select>
+
+                <button type="submit">Check Risk</button>
+            </form>
+            {% if result %}
+            <div style="margin-top:16px;"><h3>Result: {{ result }}</h3></div>
+            {% endif %}
+        </section>
+
+        <section id="location-section" class="form-wrapper section-spaced">
+            <h2>Location & Safety Check</h2>
+            <div>
+                <button id="fetch-location">Fetch My Location</button>
+                <button id="check-safety">Check Safety</button>
+            </div>
+            <div id="coords" style="margin-top:12px">Coordinates: <span id="lat">-</span>, <span id="lon">-</span></div>
+            <div id="safety" style="margin-top:8px;font-weight:700">Safety Level: -</div>
+            <div id="map" style="margin-top:12px">
+                <iframe id="mapframe" width="100%" height="280" frameborder="0" src="about:blank"></iframe>
+            </div>
+        </section>
+
+        <section id="contacts-section" class="form-wrapper section-spaced">
+            <h2>Trusted Contacts (simulated)</h2>
+            <div id="contacts-list">Loading...</div>
+            <form id="contact-form" style="margin-top:10px">
+                <input id="contact-name" placeholder="Name" required>
+                <input id="contact-phone" placeholder="Phone" required>
+                <button id="save-contact" type="button">Save Contact</button>
+            </form>
+            <div style="margin-top:12px">
+                <button id="send-alert">Send Emergency Alert</button>
+            </div>
+        </section>
+
+        <section id="helpline-section" class="form-wrapper section-spaced">
+            <h2>Important Helplines</h2>
+            <ul>
+                <li><strong>Police (National):</strong> 100</li>
+                <li><strong>Ambulance:</strong> 102</li>
+                <li><strong>Women Helpline (India National):</strong> 181</li>
+                <li><strong>Fire:</strong> 101</li>
+                <li><strong>Local Support (sample):</strong> +1-555-123-4567</li>
+            </ul>
+        </section>
+
+    </main>
+
+    <footer class="site-footer"><div class="container">© 2026 SheSecure</div></footer>
+
+    <button id="sos-btn" class="sos-btn" title="SOS">SOS</button>
+    <!-- Login / Signup modals -->
+    <div id="auth-modal" class="modal" aria-hidden="true">
+        <div class="modal-panel">
+            <button class="modal-close" id="auth-close">✕</button>
+            <div id="login-form" class="auth-form">
+                <h2>Login</h2>
+                <label>Email</label>
+                <input id="login-email" type="email" placeholder="you@example.com">
+                <label>Password</label>
+                <input id="login-pass" type="password" placeholder="Password">
+                <button id="do-login" class="btn">Login</button>
+                <p class="muted small">This is a demo. Authentication is simulated.</p>
+            </div>
+            <div id="signup-form" class="auth-form" style="display:none">
+                <h2>Sign up</h2>
+                <label>Name</label>
+                <input id="signup-name" type="text" placeholder="Your name">
+                <label>Email</label>
+                <input id="signup-email" type="email" placeholder="you@example.com">
+                <label>Password</label>
+                <input id="signup-pass" type="password" placeholder="Choose a password">
+                <button id="do-signup" class="btn">Create account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot widget (simple demo) -->
+    <div id="chatbot" class="chatbot" aria-hidden="true">
+        <div class="chatbot-header">
+            <strong>Helper Chat</strong>
+            <button id="chatbot-close" class="modal-close">✕</button>
+        </div>
+        <div class="chatbot-suggestions">
+            <button data-msg="nearest helpline">Nearest helpline</button>
+            <button data-msg="how to use sos">How to use SOS</button>
+            <button data-msg="share location">Share location</button>
+            <button data-msg="safety tips">Safety tips</button>
+        </div>
+        <div id="chatbot-body" class="chatbot-body">
+            <div class="bot-msg">Hi — I can help with safety tips or helpline info. Try a suggestion below.</div>
+        </div>
+        <div class="chatbot-input">
+            <input id="chatbot-in" placeholder="Ask something...">
+            <button id="chatbot-send" class="btn small">Send</button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // smooth scroll for in-page anchors
+        document.addEventListener('click', function(e){
+            const a = e.target.closest('a');
+            if(!a) return;
+            const href = a.getAttribute('href')||'';
+            if(href.startsWith('#')){
+                e.preventDefault();
+                const id = href.slice(1);
+                const el = document.getElementById(id);
+                if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+            }
+        });
+    </script>
+</body>
+</html>

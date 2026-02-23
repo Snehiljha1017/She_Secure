@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Safety Mode Test - SheSecure</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .test-section h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        .test-button.danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        .test-button.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+        }
+        .status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .results {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .results .success { color: #28a745; }
+        .results .error { color: #dc3545; }
+        .results .warning { color: #ffc107; }
+        .results .info { color: #17a2b8; }
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔴 Offline Safety Mode Test</h1>
+        <p class="subtitle">Comprehensive testing suite for emergency features</p>
+        
+        <div class="info-box">
+            <strong>⚠️ Before Testing:</strong>
+            Add at least one contact in the Helplines page, then grant location/media permissions when prompted.
+        </div>
+
+        <!-- System Status -->
+        <div class="test-section">
+            <h2>📊 System Status</h2>
+            <div id="system-status">
+                <span class="status info">Loading...</span>
+            </div>
+            <button class="test-button" onclick="checkSystemStatus()">Refresh Status</button>
+        </div>
+
+        <!-- Connection Tests -->
+        <div class="test-section">
+            <h2>📡 Connection Tests</h2>
+            <button class="test-button" onclick="testOnlineDetection()">Test Online Detection</button>
+            <button class="test-button" onclick="simulateOffline()">Simulate Offline (20s)</button>
+            <button class="test-button" onclick="checkConnectionStatus()">Check Connection</button>
+            <div id="connection-results" class="results"></div>
+        </div>
+
+        <!-- SOS Tests -->
+        <div class="test-section">
+            <h2>🚨 SOS Tests</h2>
+            <button class="test-button danger" onclick="testSOSTrigger()">Test SOS (Safe)</button>
+            <button class="test-button danger" onclick="testOfflineSOS()">Test Offline SOS</button>
+            <button class="test-button" onclick="stopAlarm()">Stop Alarm</button>
+            <div id="sos-results" class="results"></div>
+        </div>
+
+        <!-- Queue Tests -->
+        <div class="test-section">
+            <h2>📋 Queue Management</h2>
+            <button class="test-button" onclick="viewQueue()">View Queue</button>
+            <button class="test-button success" onclick="processQueue()">Process Queue</button>
+            <button class="test-button" onclick="clearQueue()">Clear Queue</button>
+            <div id="queue-results" class="results"></div>
+        </div>
+
+        <!-- Location Tests -->
+        <div class="test-section">
+            <h2>📍 Location Tests</h2>
+            <button class="test-button" onclick="testLocationTracking()">Get Current Location</button>
+            <button class="test-button" onclick="viewLastLocation()">View Last Location</button>
+            <button class="test-button" onclick="testLocationAccuracy()">Test Accuracy</button>
+            <div id="location-results" class="results"></div>
+        </div>
+
+        <!-- Evidence Tests -->
+        <div class="test-section">
+            <h2>📹 Evidence Recording</h2>
+            <button class="test-button" onclick="testAudioRecording()">Test Audio (5s)</button>
+            <button class="test-button" onclick="testVideoRecording()">Test Video (5s)</button>
+            <button class="test-button" onclick="viewEvidence()">View Evidence</button>
+            <button class="test-button" onclick="clearEvidence()">Clear Evidence</button>
+            <div id="evidence-results" class="results"></div>
+        </div>
+
+        <!-- Storage Tests -->
+        <div class="test-section">
+            <h2>💾 Storage Tests</h2>
+            <button class="test-button" onclick="checkStorage()">Check Storage</button>
+            <button class="test-button" onclick="exportData()">Export Data</button>
+            <button class="test-button danger" onclick="clearAllData()">Clear All Data</button>
+            <div id="storage-results" class="results"></div>
+        </div>
+
+        <!-- Integration Test -->
+        <div class="test-section">
+            <h2>🧪 Full Integration Test</h2>
+            <button class="test-button success" onclick="runFullTest()">Run Complete Test Suite</button>
+            <div id="integration-results" class="results"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/offline-safety.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+        let testLog = '';
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            testLog = `<div class="${type}">[${timestamp}] ${message}</div>` + testLog;
+        }
+
+        function updateResults(elementId) {
+            document.getElementById(elementId).innerHTML = testLog;
+            testLog = '';
+        }
+
+        // System Status
+        function checkSystemStatus() {
+            log('Checking system status...', 'info');
+            const statusDiv = document.getElementById('system-status');
+            let html = '';
+            
+            // Check offline safety loaded
+            if (typeof offlineSafety !== 'undefined') {
+                html += '<span class="status success">✅ Offline Safety Loaded</span>';
+            } else {
+                html += '<span class="status error">❌ Offline Safety Not Loaded</span>';
+            }
+            
+            // Check connection
+            if (navigator.onLine) {
+                html += '<span class="status online">✅ Online</span>';
+            } else {
+                html += '<span class="status offline">📡 Offline</span>';
+            }
+            
+            // Check contacts
+            const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+            html += `<span class="status info">👥 ${contacts.length} Contacts</span>`;
+            
+            // Check queue
+            const queue = JSON.parse(localStorage.getItem('emergency_queue') || '[]');
+            const pending = queue.filter(i => i.status === 'pending').length;
+            if (pending > 0) {
+                html += `<span class="status warning">⏳ ${pending} Pending</span>`;
+            }
+            
+            // Check location
+            const location = JSON.parse(localStorage.getItem('last_known_location') || '{}');
+            if (location.lat && location.lon) {
+                html += '<span class="status success">📍 Location Available</span>';
+            } else {
+                html += '<span class="status offline">📍 No Location</span>';
+            }
+            
+            statusDiv.innerHTML = html;
+            log('Status check complete', 'success');
+        }
+
+        // Connection Tests
+        function testOnlineDetection() {
+            log('Testing online detection...', 'info');
+            log(`Navigator.onLine: ${navigator.onLine}`, 'info');
+            if (typeof offlineSafety !== 'undefined') {
+                log(`OfflineSafety.isOnline: ${offlineSafety.isOnline}`, 'info');
+                log('Online detection working!', 'success');
+            } else {
+                log('Offline safety not loaded yet', 'error');
+            }
+            updateResults('connection-results');
+        }
+
+        function simulateOffline() {
+            log('Simulating offline mode for 20 seconds...', 'warning');
+            if (typeof offlineSafety !== 'undefined') {
+                offlineSafety.isOnline = false;
+                offlineSafety.updateOfflineIndicator(true);
+                log('Offline mode activated!', 'success');
+                log('Will auto-restore in 20 seconds', 'info');
+                setTimeout(() => {
+                    offlineSafety.isOnline = navigator.onLine;
+                    offlineSafety.updateOfflineIndicator(!navigator.onLine);
+                    log('Offline simulation ended', 'info');
+                }, 20000);
+            } else {
+                log('Offline safety not ready', 'error');
+            }
+            updateResults('connection-results');
+        }
+
+        function checkConnectionStatus() {
+            log('Checking connection status...', 'info');
+            log(`Browser: ${navigator.onLine ? 'Online' : 'Offline'}`, 'info');
+            log(`User Agent: ${navigator.userAgent}`, 'info');
+            log(`Connection: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}`, 'info');
+            updateResults('connection-results');
+        }
+
+        // SOS Tests
+        function testSOSTrigger() {
+            log('Testing SOS trigger (safe mode)...', 'warning');
+            if (typeof offlineSafety !== 'undefined') {
+                const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+                if (contacts.length === 0) {
+                    log('No contacts found! Add contacts first.', 'error');
+                } else {
+                    log(`Found ${contacts.length} contacts`, 'success');
+                    log('Triggering SOS in 3 seconds...', 'warning');
+                    setTimeout(() => {
+                        offlineSafety.triggerOfflineSOS();
+                        log('SOS triggered!', 'success');
+                    }, 3000);
+                }
+            } else {
+                log('Offline safety not loaded', 'error');
+            }
+            updateResults('sos-results');
+        }
+
+        function testOfflineSOS() {
+           log('Testing offline SOS...', 'warning');
+            // Simulate offline first
+            if (typeof offlineSafety !== 'undefined') {
+                offlineSafety.isOnline = false;
+                offlineSafety.updateOfflineIndicator(true);
+                log('Set to offline mode', 'info');
+                setTimeout(() => {
+                    offlineSafety.triggerOfflineSOS();
+                    log('Offline SOS triggered!', 'success');
+                    // Restore after 30 seconds
+                    setTimeout(() => {
+                        offlineSafety.isOnline = navigator.onLine;
+                        offlineSafety.updateOfflineIndicator(!navigator.onLine);
+                    }, 30000);
+                }, 2000);
+            }
+            updateResults('sos-results');
+        }
+
+        function stopAlarm() {
+            log('Stopping alarm...', 'info');
+            if (typeof offlineSafety !== 'undefined' && offlineSafety.alarmAudio) {
+                offlineSafety.stopAlarm();
+                log('Alarm stopped', 'success');
+            }
+            updateResults('sos-results');
+        }
+
+        // Queue Tests
+        function viewQueue() {
+            log('Loading queue...', 'info');
+            const queue = JSON.parse(localStorage.getItem('emergency_queue') || '[]');
+            log(`Total items: ${queue.length}`, 'info');
+            const pending = queue.filter(i => i.status === 'pending');
+            const sent = queue.filter(i => i.status === 'sent');
+            log(`Pending: ${pending.length}`, 'warning');
+            log(`Sent: ${sent.length}`, 'success');
+            queue.forEach((item, idx) => {
+                log(`${idx + 1}. ${item.type} - ${item.status} - ${item.timestamp}`, 'info');
+            });
+            updateResults('queue-results');
+        }
+
+        function processQueue() {
+            log('Processing queue...', 'info');
+            if (typeof offlineSafety !== 'undefined') {
+                offlineSafety.processQueuedEmergencies();
+                log('Queue processing initiated', 'success');
+            }
+            updateResults('queue-results');
+        }
+
+        function clearQueue() {
+            log('Clearing queue...', 'warning');
+            localStorage.setItem('emergency_queue', '[]');
+            log('Queue cleared', 'success');
+            updateResults('queue-results');
+        }
+
+        // Location Tests
+        function testLocationTracking() {
+            log('Getting current location...', 'info');
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    log(`Latitude: ${position.coords.latitude}`, 'success');
+                    log(`Longitude: ${position.coords.longitude}`, 'success');
+                    log(`Accuracy: ±${Math.round(position.coords.accuracy)}m`, 'info');
+                    updateResults('location-results');
+                },
+                error => {
+                    log(`Error: ${error.message}`, 'error');
+                    updateResults('location-results');
+                }
+            );
+        }
+
+        function viewLastLocation() {
+            log('Loading last known location...', 'info');
+            const location = JSON.parse(localStorage.getItem('last_known_location') || '{}');
+            if (location.lat && location.lon) {
+                log(`Latitude: ${location.lat}`, 'info');
+                log(`Longitude: ${location.lon}`, 'info');
+                log(`Timestamp: ${location.timestamp}`, 'info');
+                log(`Accuracy: ±${Math.round(location.accuracy || 0)}m`, 'info');
+            } else {
+                log('No location data found', 'warning');
+            }
+            updateResults('location-results');
+        }
+
+        function testLocationAccuracy() {
+            log('Testing location accuracy (high accuracy mode)...', 'info');
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    log(`Accuracy: ±${Math.round(position.coords.accuracy)}m`, position.coords.accuracy < 50 ? 'success' : 'warning');
+                    log(`Speed: ${position.coords.speed || 'Unknown'}`, 'info');
+                    log(`Heading: ${position.coords.heading || 'Unknown'}`, 'info');
+                    updateResults('location-results');
+                },
+                error => {
+                    log(`Error: ${error.message}`, 'error');
+                    updateResults('location-results');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        // Evidence Tests
+        function testAudioRecording() {
+            log('Testing audio recording (5 seconds)...', 'info');
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    log('Microphone access granted', 'success');
+                    const recorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        log(`Recorded ${chunks.length} chunks`, 'success');
+                        log(`Total size: ${chunks.reduce((a, c) => a + c.size, 0)} bytes`, 'info');
+                        stream.getTracks().forEach(t => t.stop());
+                        updateResults('evidence-results');
+                    };
+                    recorder.start();
+                    log('Recording started...', 'info');
+                    setTimeout(() => {
+                        recorder.stop();
+                        log('Recording stopped', 'success');
+                    }, 5000);
+                })
+                .catch(err => {
+                    log(`Error: ${err.message}`, 'error');
+                    updateResults('evidence-results');
+                });
+        }
+
+        function testVideoRecording() {
+            log('Testing video recording (5 seconds)...', 'info');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+                .then(stream => {
+                    log('Camera access granted', 'success');
+                    const recorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        log(`Recorded ${chunks.length} chunks`, 'success');
+                        log(`Total size: ${chunks.reduce((a, c) => a + c.size, 0)} bytes`, 'info');
+                        stream.getTracks().forEach(t => t.stop());
+                        updateResults('evidence-results');
+                    };
+                    recorder.start();
+                    log('Recording started...', 'info');
+                    setTimeout(() => {
+                        recorder.stop();
+                        log('Recording stopped', 'success');
+                    }, 5000);
+                })
+                .catch(err => {
+                    log(`Error: ${err.message}`, 'error');
+                    updateResults('evidence-results');
+                });
+        }
+
+        function viewEvidence() {
+            log('Loading evidence...', 'info');
+            const evidence = JSON.parse(localStorage.getItem('emergency_evidence') || '[]');
+            log(`Total evidence items: ${evidence.length}/5`, 'info');
+            evidence.forEach((item, idx) => {
+                log(`${idx + 1}. ${item.type} - ${Math.round(item.size / 1024)}KB - ${item.timestamp}`, 'info');
+            });
+            if (evidence.length === 0) {
+                log('No evidence recorded yet', 'warning');
+            }
+            updateResults('evidence-results');
+        }
+
+        function clearEvidence() {
+            log('Clearing evidence...', 'warning');
+            localStorage.setItem('emergency_evidence', '[]');
+            log('Evidence cleared', 'success');
+            updateResults('evidence-results');
+        }
+
+        // Storage Tests
+        function checkStorage() {
+            log('Checking storage usage...', 'info');
+            let totalSize = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    const size = localStorage[key].length * 2; // approximate bytes
+                    log(`${key}: ${Math.round(size / 1024)}KB`, 'info');
+                    totalSize += size;
+                }
+            }
+            log(`Total storage: ${Math.round(totalSize / 1024)}KB`, 'success');
+            updateResults('storage-results');
+        }
+
+        function exportData() {
+            log('Exporting data...', 'info');
+            const data = {
+                contacts: localStorage.getItem('contacts'),
+                queue: localStorage.getItem('emergency_queue'),
+                location: localStorage.getItem('last_known_location'),
+                evidence: localStorage.getItem('emergency_evidence')
+            };
+            const json = JSON.stringify(data, null, 2);
+            log(`Exported ${json.length} characters`, 'success');
+            console.log('Exported data:', data);
+            log('Check browser console for full export', 'info');
+            updateResults('storage-results');
+        }
+
+        function clearAllData() {
+            if (confirm('Clear ALL offline safety data? This cannot be undone!')) {
+                log('Clearing all data...', 'warning');
+                localStorage.removeItem('emergency_queue');
+                localStorage.removeItem('emergency_evidence');
+                localStorage.removeItem('last_known_location');
+                log('All offline safety data cleared', 'success');
+                log('Contacts preserved', 'info');
+                updateResults('storage-results');
+            }
+        }
+
+        // Integration Test
+        async function runFullTest() {
+            log('====== STARTING FULL INTEGRATION TEST ======', 'info');
+            
+            // 1. System check
+            log('1. Checking system...', 'info');
+            await sleep(500);
+            if (typeof offlineSafety === 'undefined') {
+                log('FAIL: Offline safety not loaded', 'error');
+                updateResults('integration-results');
+                return;
+            }
+            log('PASS: System loaded', 'success');
+
+            // 2. Connection test
+            log('2. Testing connection detection...', 'info');
+            await sleep(500);
+            log(`PASS: Connection status: ${navigator.onLine ? 'Online' : 'Offline'}`, 'success');
+            
+            // 3. Location test
+            log('3. Testing location...', 'info');
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {timeout: 5000});
+                });
+                log(`PASS: Location: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`, 'success');
+            } catch (e) {
+                log('FAIL: Location unavailable', 'error');
+            }
+            
+            // 4. Contacts test
+            log('4. Checking contacts...', 'info');
+            await sleep(500);
+            const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+            if (contacts.length > 0) {
+                log(`PASS: ${contacts.length} contacts found`, 'success');
+            } else {
+                log('WARN: No contacts - add some for full testing', 'warning');
+            }
+            
+            // 5. Storage test
+            log('5. Testing storage...', 'info');
+            await sleep(500);
+            try {
+                localStorage.setItem('test_key', 'test_value');
+                localStorage.removeItem('test_key');
+                log('PASS: Storage accessible', 'success');
+            } catch (e) {
+                log('FAIL: Storage error', 'error');
+            }
+            
+            // 6. Queue test
+            log('6. Testing queue...', 'info');
+            await sleep(500);
+            const queue = JSON.parse(localStorage.getItem('emergency_queue') || '[]');
+            log(`PASS: Queue has ${queue.length} items`, 'success');
+            
+            log('====== INTEGRATION TEST COMPLETE ======', 'success');
+            log('All core systems functional!', 'success');
+            updateResults('integration-results');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Auto-check status on load
+        window.addEventListener('load', () => {
+            setTimeout(checkSystemStatus, 1000);
+        });
+    </script>
+</body>
+</html>

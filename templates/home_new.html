@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>✨ SheSecure - Your Safety, Our Priority</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-inner">
+            <a class="brand" href="/">SheSecure</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/predictor">Predictor</a>
+                <a href="/location">Location Safety</a>
+                <a href="/helplines">Helplines</a>
+            </div>
+            <div class="taskbar">
+                <div class="taskbar-item">
+                    <select id="lang-select" aria-label="Language">
+                        <option value="en">English</option>
+                        <option value="hi">हिन्दी</option>
+                        <option value="bn">বাংলা</option>
+                    </select>
+                </div>
+                <div class="taskbar-item">
+                    <button id="open-chatbot" class="btn small muted">Chat</button>
+                </div>
+                <div class="taskbar-item auth">
+                    <button id="open-login" class="btn ghost">Login</button>
+                    <button id="open-signup" class="btn ghost">Sign up</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-inner container">
+            <div class="hero-label">✨ Women's Safety Empowerment Platform</div>
+            <h1>Empowering Women<br>Through Informed Safety</h1>
+            <p>Predictive risk assessment to help you make smarter decisions about your personal safety. Know the risks before you go.</p>
+            <div class="hero-cta">
+                <a href="#features" class="cta-btn">Explore Features →</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <main class="container">
+        <section id="features" class="features-section">
+            <h2 style="text-align: center; margin-bottom: 40px;">✨ How SheSecure Works</h2>
+            <div class="features-grid">
+                <!-- Feature 1: Predictor -->
+                <div class="feature-card">
+                    <div class="feature-icon">⚠️</div>
+                    <h3>📊 Safety Risk Assessment</h3>
+                    <p>🤫 Intelligent analysis based on crime data, time of day, crowd levels, and weather. Make informed decisions about your surroundings.</p>
+                    <a href="/predictor" class="card-btn">Check Risk →</a>
+                </div>
+
+                <!-- Feature 2: Location Safety -->
+                <div class="feature-card">
+                    <div class="feature-icon">📍</div>
+                    <h3>🗺️ Real-Time Location Tracking</h3>
+                    <p>📄 Identify crime-prone areas and safety zones. Get live location-based warnings and crime insights instantly.</p>
+                    <a href="/location" class="card-btn">View Map →</a>
+                </div>
+
+                <!-- Feature 3: Helplines -->
+                <div class="feature-card">
+                    <div class="feature-icon">📞</div>
+                    <h3>📢 24/7 Emergency Support</h3>
+                    <p>🚨 Instant access to emergency numbers, trusted contacts, and crisis resources. One-tap SOS in urgent situations.</p>
+                    <a href="/helplines" class="card-btn">View Helplines →</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Why Use This Section -->
+        <section class="why-section">
+            <h2>👥 Why SheSecure?</h2>
+            <div class="why-content">
+                <div class="why-point">
+                    <h4>🎯 Predictive, Not Reactive</h4>
+                    <p>Unlike basic SOS buttons, our system helps you assess risks BEFORE you're in danger. Prevention through awareness.</p>
+                </div>
+                <div class="why-point">
+                    <h4>🧠 Data-Driven Insights</h4>
+                    <p>Machine learning model trained on real crime data helps you understand safety patterns and make smarter choices.</p>
+                </div>
+                <div class="why-point">
+                    <h4>⚡ Always Available</h4>
+                    <p>Whether you need risk info, location safety checks, or emergency numbers—everything is just a few clicks away.</p>
+                </div>
+                <div class="why-point">
+                    <h4>🤝 Community Support</h4>
+                    <p>Save trusted contacts and maintain a personal support network. Share your location safely with people you trust.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2>🙋 Ready to Take Control of Your Safety?</h2>
+            <p>✨ Start by checking your local risk level or accessing emergency helplines in seconds.</p>
+            <div class="cta-buttons">
+                <a href="/predictor" class="btn primary">Check Risk Now</a>
+                <a href="/helplines" class="btn secondary">View Helplines</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <p>© 2026 SheSecure. Empowering women everywhere.</p>
+        </div>
+    </footer>
+
+    <!-- Floating SOS Button -->
+    <button id="sos-btn" class="sos-btn" title="Emergency SOS">SOS</button>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal" aria-hidden="true">
+        <div class="modal-panel">
+            <button class="modal-close" id="auth-close">✕</button>
+            <div id="login-form" class="auth-form">
+                <h2>Login</h2>
+                <label>Email</label>
+                <input id="login-email" type="email" placeholder="you@example.com">
+                <label>Password</label>
+                <input id="login-pass" type="password" placeholder="Password">
+                <button id="do-login" class="btn">Login</button>
+                <p class="muted small">This is a demo. Authentication is simulated.</p>
+            </div>
+            <div id="signup-form" class="auth-form" style="display:none">
+                <h2>Sign up</h2>
+                <label>Name</label>
+                <input id="signup-name" type="text" placeholder="Your name">
+                <label>Email</label>
+                <input id="signup-email" type="email" placeholder="you@example.com">
+                <label>Password</label>
+                <input id="signup-pass" type="password" placeholder="Choose a password">
+                <button id="do-signup" class="btn">Create account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <div id="chatbot" class="chatbot" aria-hidden="true">
+        <div class="chatbot-header">
+            <strong>Helper Chat</strong>
+            <button id="chatbot-close" class="modal-close">✕</button>
+        </div>
+        <div class="chatbot-suggestions">
+            <button data-msg="nearest helpline">Nearest helpline</button>
+            <button data-msg="how to use sos">How to use SOS</button>
+            <button data-msg="share location">Share location</button>
+            <button data-msg="safety tips">Safety tips</button>
+        </div>
+        <div id="chatbot-body" class="chatbot-body">
+            <div class="bot-msg">Hi — I can help with safety tips or helpline info. Try a suggestion below.</div>
+        </div>
+        <div class="chatbot-input">
+            <input id="chatbot-in" placeholder="Ask something...">
+            <button id="chatbot-send" class="btn small">Send</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

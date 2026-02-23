@@ -1,0 +1,27 @@
+[
+  {
+    "user": "you",
+    "message": "hi",
+    "ts": "2026-02-06T11:35:39.366109"
+  },
+  {
+    "user": "you",
+    "message": "how to use sos",
+    "ts": "2026-02-09T14:45:07.765435"
+  },
+  {
+    "user": "bot",
+    "message": "If this is an emergency, press the SOS button — it will simulate sending your location to trusted contacts.",
+    "ts": "2026-02-09T14:45:07.780561"
+  },
+  {
+    "user": "you",
+    "message": "safety tips",
+    "ts": "2026-02-09T15:04:09.770847"
+  },
+  {
+    "user": "bot",
+    "message": "Safety tips: stay in well-lit areas, keep friends/family informed, avoid isolated paths, trust your instincts.",
+    "ts": "2026-02-09T15:04:09.770847"
+  }
+]

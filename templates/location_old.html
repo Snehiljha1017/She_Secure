@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Location & Safety Check</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="container nav-inner">
+            <a class="brand" href="/home">SheSecure</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/predictor">Predictor</a>
+                <a href="/helpline">Helplines</a>
+                    <a href="/all">All-in-one</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h1>Location Based Safety Check</h1>
+
+        <div class="form-wrapper">
+            <div>
+                <button id="fetch-location">Fetch My Location</button>
+                <button id="check-safety">Check Safety</button>
+            </div>
+
+            <div id="coords" style="margin-top:12px">Coordinates: <span id="lat">-</span>, <span id="lon">-</span></div>
+            <div id="safety" style="margin-top:8px;font-weight:700">Safety Level: -</div>
+
+            <div id="map" style="margin-top:12px">
+                <iframe id="mapframe" width="100%" height="360" frameborder="0" src="about:blank"></iframe>
+            </div>
+
+            <hr>
+
+            <h3>Trusted Contacts</h3>
+            <p>You can save up to 5 trusted contacts (simulated alerts will be sent to these numbers).</p>
+            <div id="contacts-list"></div>
+
+            <form id="contact-form" style="margin-top:10px">
+                <input id="contact-name" placeholder="Name" required>
+                <input id="contact-phone" placeholder="Phone" required>
+                <button id="save-contact" type="button">Save Contact</button>
+            </form>
+
+            <div style="margin-top:12px">
+                <button id="send-alert">Send Emergency Alert</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">© 2026 Smart Women Safety</div>
+    </footer>
+
+    <button id="sos-btn" class="sos-btn" title="SOS">SOS</button>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

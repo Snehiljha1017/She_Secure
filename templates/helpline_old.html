@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Emergency Helplines</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="container nav-inner">
+            <a class="brand" href="/home">SheSecure</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/predictor">Predictor</a>
+                <a href="/location">Location</a>
+                    <a href="/all">All-in-one</a>
+                </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h1>Important Helplines</h1>
+        <div class="form-wrapper">
+            <ul>
+                <li><strong>Police (National):</strong> 100</li>
+                <li><strong>Ambulance:</strong> 102</li>
+                <li><strong>Women Helpline (India National):</strong> 181</li>
+                <li><strong>Fire:</strong> 101</li>
+                <li><strong>Local Support (sample):</strong> +1-555-123-4567</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">© 2026 SheSecure</div>
+    </footer>
+
+    <button id="sos-btn" class="sos-btn" title="SOS">SOS</button>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+/* ===========================
+   Persistent SOS Button
+   =========================== */
+
+.persistent-sos-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: 3px solid #991b1b;
+    font-size: 36px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    z-index: 9999;
+    transition: all 0.3s ease;
+    animation: sosPulse 2s infinite;
+    outline: none;
+}
+
+.persistent-sos-btn:hover {
+    width: 78px;
+    height: 78px;
+    box-shadow: 0 12px 35px rgba(239, 68, 68, 0.6);
+    background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+.persistent-sos-btn:active {
+    transform: scale(0.95);
+}
+
+.persistent-sos-btn:focus-visible {
+    outline: 3px solid #fbbf24;
+    outline-offset: 3px;
+}
+
+/* Pulse Animation */
+@keyframes sosPulse {
+    0% {
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 35px rgba(239, 68, 68, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.2);
+    }
+    100% {
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    }
+}
+
+/* ===========================
+   SOS Confirmation Modal
+   =========================== */
+
+.sos-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sos-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
+}
+
+.sos-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+    overflow: hidden;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.sos-modal-header {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    padding: 24px;
+    border-bottom: 3px solid #991b1b;
+}
+
+.sos-modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.sos-modal-body {
+    padding: 24px;
+}
+
+.sos-modal-question {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 12px 0;
+}
+
+.sos-modal-info {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.sos-modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    justify-content: flex-end;
+}
+
+/* Cancel Button */
+.sos-btn-cancel {
+    padding: 10px 24px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    color: #6b7280;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.sos-btn-cancel:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.sos-btn-cancel:focus-visible {
+    outline: 2px solid #fbbf24;
+    outline-offset: 2px;
+}
+
+/* Confirm Button */
+.sos-btn-confirm {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.sos-btn-confirm:hover {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.sos-btn-confirm:active {
+    transform: scale(0.98);
+}
+
+.sos-btn-confirm:focus-visible {
+    outline: 2px solid #fbbf24;
+    outline-offset: 2px;
+}
+
+/* ===========================
+   Responsive Design
+   =========================== */
+
+@media (max-width: 768px) {
+    .persistent-sos-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 65px;
+        height: 65px;
+        font-size: 32px;
+    }
+
+    .persistent-sos-btn:hover {
+        width: 72px;
+        height: 72px;
+    }
+
+    .sos-modal-content {
+        width: 95%;
+        margin: 0 auto;
+    }
+
+    .sos-modal-header h2 {
+        font-size: 20px;
+    }
+
+    .sos-modal-question {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .persistent-sos-btn {
+        bottom: 15px;
+        right: 15px;
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+    }
+
+    .persistent-sos-btn:hover {
+        width: 65px;
+        height: 65px;
+    }
+
+    .sos-modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .sos-btn-cancel,
+    .sos-btn-confirm {
+        width: 100%;
+    }
+}
+
+/* ===========================
+   Dark/High Contrast Theme Support
+   =========================== */
+
+body[data-theme="dark"] .sos-modal-content {
+    background: #1f2937;
+}
+
+body[data-theme="dark"] .sos-modal-body {
+    color: #f3f4f6;
+}
+
+body[data-theme="dark"] .sos-modal-question {
+    color: #f9fafb;
+}
+
+body[data-theme="dark"] .sos-modal-info {
+    color: #d1d5db;
+}
+
+body[data-theme="dark"] .sos-modal-footer {
+    background: #111827;
+    border-top-color: #374151;
+}
+
+body[data-theme="dark"] .sos-btn-cancel {
+    background: #374151;
+    color: #f3f4f6;
+    border-color: #4b5563;
+}
+
+body[data-theme="dark"] .sos-btn-cancel:hover {
+    background: #4b5563;
+    border-color: #6b7280;
+}
+
+body[data-theme="high-contrast"] .persistent-sos-btn {
+    border: 4px solid #000;
+}
+
+body[data-theme="high-contrast"] .sos-modal-header {
+    background: #000;
+    border-bottom: 4px solid #fff;
+}
+
+body[data-theme="high-contrast"] .sos-modal-content {
+    border: 3px solid #000;
+}
+
+body[data-theme="high-contrast"] .sos-btn-cancel {
+    border: 3px solid #000;
+    background: #fff;
+    color: #000;
+}
+
+body[data-theme="high-contrast"] .sos-btn-confirm {
+    border: 3px solid #000;
+}

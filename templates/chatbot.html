@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Chatbot - SheSecure{% endblock %}
+
+{% block content %}
+<div class="chatbot-container">
+    <div class="chatbot-header">
+        <h1>💬 SheSecure Assistant</h1>
+        <p>Your personal AI safety companion</p>
+    </div>
+
+    <div class="chatbot-wrapper">
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message fade-in">
+                <p>Hello! I'm your SheSecure assistant. How can I help you today?</p>
+            </div>
+        </div>
+
+        <div class="chat-input-wrapper">
+            <form id="chat-form">
+                <input type="text" id="chat-input" placeholder="Ask me anything about safety..." required>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.chatbot-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    background-color: var(--bg-secondary);
+    transition: background-color 0.3s ease;
+}
+
+.chatbot-header {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    color: white;
+    padding: 24px;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+.chatbot-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+}
+
+.chatbot-header p {
+    font-size: 14px;
+    opacity: 0.95;
+    margin: 0;
+}
+
+.chatbot-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 24px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 20px;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 12px;
+    animation: slideInUp 0.3s ease-out;
+}
+
+.user-message {
+    justify-content: flex-end;
+}
+
+.user-message p {
+    background: var(--accent-2);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 70%;
+    word-wrap: break-word;
+    transition: background-color 0.3s ease;
+}
+
+.bot-message {
+    justify-content: flex-start;
+}
+
+.bot-message p {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    max-width: 70%;
+    box-shadow: 0 2px 8px var(--card-shadow);
+    word-wrap: break-word;
+    transition: all 0.3s ease;
+}
+
+.chat-input-wrapper {
+    margin-top: auto;
+}
+
+#chat-form {
+    display: flex;
+    gap: 12px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 14px 16px;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--input-border);
+    border-radius: 24px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+#chat-input:focus {
+    outline: none;
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.15);
+}
+
+body.theme-dark #chat-input:focus {
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+}
+
+body.theme-high-contrast #chat-input:focus {
+    box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.3);
+}
+
+#chat-form .btn {
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .chatbot-container {
+        height: calc(100vh - 160px);
+    }
+
+    .user-message p,
+    .bot-message p {
+        max-width: 90%;
+    }
+
+    #chat-form {
+        flex-direction: column;
+    }
+
+    #chat-form .btn {
+        width: 100%;
+    }
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+</style>
+
+<script>
+const responses = {
+    'safety': 'Here are key safety tips: ✓ Share location with trusted contacts ✓ Keep phone charged ✓ Stay aware of surroundings ✓ Trust your instincts ✓ Have emergency contacts saved',
+    'safe': 'Always prioritize your safety! Keep your personal information private, avoid sharing your address with strangers, and let someone know where you\'re going.',
+    'emergency': 'In emergencies, call: Police (100) | Women Helpline (1091) | Ambulance (102) | Childline (1098). You can access these from our Helplines section.',
+    'hospital': 'For medical emergencies, call 102 for ambulance or visit your nearest hospital immediately. Always keep a list of nearby hospitals handy.',
+    'police': 'For police assistance, call 100. You can also file a complaint online or visit your nearest police station. Stay calm and provide clear information.',
+    'help': 'I can assist with: 🎯 Safety tips • 🚨 Emergency contacts • 📍 Location sharing • 💬 Feature guidance • 📊 Safety predictions',
+    'contact': 'You can add trusted contacts in the Helplines section. Save family, friends, or local authorities. Enable one-click emergency alerts.',
+    'location': 'Our location sharing feature lets you share real-time GPS with trusted contacts. Useful for travel, emergencies, and your peace of mind.',
+    'prediction': 'The Safety Predictor analyzes location and time to provide risk insights. Use it before traveling to unfamiliar areas.',
+    'tips': 'Smart tips: Use buddy system • Avoid shortcuts at night • Keep valuables hidden • Share itinerary • Trust your gut feeling',
+    'default': 'I\'m your SheSecure assistant! 👋 Ask me about safety tips, emergencies, features, or how to stay safe. What can I help with?'
+};
+
+function findResponse(text) {
+    text = text.toLowerCase().trim();
+    for (const [key, response] of Object.entries(responses)) {
+        if (text.includes(key)) {
+            return response;
+        }
+    }
+    return responses.default;
+}
+
+function addMessage(text, isUser) {
+    const messagesDiv = document.getElementById('chat-messages');
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${isUser ? 'user-message' : 'bot-message'} fade-in`;
+    messageEl.innerHTML = `<p>${text}</p>`;
+    messagesDiv.appendChild(messageEl);
+    
+    // Auto-scroll to bottom
+    setTimeout(() => {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }, 50);
+}
+
+function addTypingIndicator() {
+    const messagesDiv = document.getElementById('chat-messages');
+    const typingEl = document.createElement('div');
+    typingEl.className = 'message bot-message fade-in';
+    typingEl.id = 'typing-indicator';
+    typingEl.innerHTML = '<p>💭 typing...</p>';
+    messagesDiv.appendChild(typingEl);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const typing = document.getElementById('typing-indicator');
+    if (typing) typing.remove();
+}
+
+document.getElementById('chat-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    
+    if (text) {
+        addMessage(text, true);
+        input.value = '';
+        input.focus();
+        
+        // Show typing indicator
+        addTypingIndicator();
+        
+        // Simulate thinking delay
+        setTimeout(() => {
+            removeTypingIndicator();
+            const response = findResponse(text);
+            addMessage(response, false);
+        }, 600);
+    }
+});
+</script>
+{% endblock %}

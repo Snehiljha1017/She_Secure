@@ -1,0 +1,104 @@
+/* Navbar Logo Styling */
+.navbar-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.navbar-logo:hover {
+    opacity: 0.9;
+    transform: scale(1.03);
+}
+
+.navbar-logo img {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.navbar-logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.8px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Hero Section Logo */
+.landing-hero-logo-large {
+    width: 420px;
+    height: 420px;
+    animation: fadeIn 0.8s ease-out, float 6s ease-in-out 0.8s infinite;
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* Dashboard Logo */
+.dashboard-logo-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.dashboard-logo-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .navbar-logo {
+        gap: 8px;
+        padding: 0 8px;
+    }
+
+    .navbar-logo img {
+        height: 28px;
+    }
+
+    .navbar-logo-text {
+        font-size: 14px;
+    }
+
+    .landing-hero-logo-large {
+        width: 250px;
+        height: 250px;
+    }
+
+    .dashboard-logo-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 600px) {
+    .navbar-logo-text {
+        display: none;
+    }
+
+    .navbar-logo {
+        gap: 6px;
+        padding: 0 6px;
+    }
+
+    .landing-hero-logo-large {
+        width: 200px;
+        height: 200px;
+    }
+}
