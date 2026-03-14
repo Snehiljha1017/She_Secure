@@ -10,10 +10,18 @@
             <p>Sign in to your SheSecure account</p>
         </div>
 
-        <form class="auth-form" id="login-form">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form class="auth-form" id="login-form" method="POST">
             <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="your@email.com">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Enter your username">
             </div>
 
             <div class="form-group">
@@ -145,16 +153,4 @@ body.theme-high-contrast .form-group input:focus {
     }
 }
 </style>
-
-<script>
-document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    
-    // Demo login - redirect to dashboard
-    localStorage.setItem('user_email', email);
-    window.location.href = '/dashboard';
-});
-</script>
 {% endblock %}

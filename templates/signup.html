@@ -10,10 +10,18 @@
             <p>Join SheSecure today</p>
         </div>
 
-        <form class="auth-form" id="signup-form">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form class="auth-form" id="signup-form" method="POST">
             <div class="form-group">
-                <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" required placeholder="Your Name">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Choose a username">
             </div>
 
             <div class="form-group">
@@ -24,11 +32,6 @@
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required placeholder="••••••••">
-            </div>
-
-            <div class="form-group">
-                <label for="confirm">Confirm Password</label>
-                <input type="password" id="confirm" name="confirm" required placeholder="••••••••">
             </div>
 
             <button type="submit" class="btn btn-primary btn-block">Create Account</button>
@@ -155,22 +158,4 @@ body.theme-high-contrast .form-group input:focus {
     }
 }
 </style>
-
-<script>
-document.getElementById('signup-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const password = document.getElementById('password').value;
-    const confirm = document.getElementById('confirm').value;
-    
-    if (password !== confirm) {
-        alert('Passwords do not match!');
-        return;
-    }
-    
-    const name = document.getElementById('name').value;
-    localStorage.setItem('user_name', name);
-    localStorage.setItem('user_email', document.getElementById('email').value);
-    window.location.href = '/dashboard';
-});
-</script>
 {% endblock %}

@@ -5,7 +5,37 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Smart Women Safety System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    
+    <style>
+        #data-impact {
+            text-align: center;
+            padding: 40px 20px;
+            background: #f4f6f8;
+        }
+        .impact-cards {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .impact-card {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .impact-card h3 {
+            font-size: 2rem;
+            margin: 0;
+            color: #333;
+        }
+        .impact-card p {
+            margin: 5px 0 0;
+            color: #666;
+        }
+        #data-impact .btn {
+            margin-top: 15px;
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -25,6 +55,26 @@
             <a class="btn" href="/predictor">Check Risk Now</a>
         </div>
     </header>
+
+    <section id="data-impact" class="features container">
+        <h2>Dataset Power</h2>
+        <p>Our system leverages real incident data to drive predictions and safety insights.</p>
+        <div class="impact-cards">
+            <div class="impact-card">
+                <h3>{{ dataset_stats.total_crimes }}</h3>
+                <p>Crime Records</p>
+            </div>
+            <div class="impact-card">
+                <h3>{{ dataset_stats.cities }}</h3>
+                <p>Cities Covered</p>
+            </div>
+            <div class="impact-card">
+                <h3>{{ dataset_stats.crime_types }}</h3>
+                <p>Crime Types</p>
+            </div>
+        </div>
+        <a class="btn" href="/crime-data">Explore Full Dashboard</a>
+    </section>
 
     <section id="features" class="features container">
         <div class="feature-card">
