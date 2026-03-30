@@ -1,191 +1,1623 @@
 {% extends "base.html" %}
 
-{% block title %}Location Sharing - SheSecure{% endblock %}
+{% block title %}Live Location - SheSecure{% endblock %}
 
 {% block content %}
-<div class="container location-container">
-    <div class="location-header fade-in">
-        <h1>📍 Location Sharing</h1>
-        <p>Share your location with trusted contacts in real-time</p>
-    </div>
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+>
 
-    <div class="location-grid">
-        <div class="location-card fade-in-up">
-            <h3>Get Your Location</h3>
-            <button type="button" class="btn btn-primary" id="get-location-btn">Share My Location</button>
-            <div id="location-display" style="display: none; margin-top: 16px;">
-                <p><strong>Latitude:</strong> <span id="lat-value">-</span></p>
-                <p><strong>Longitude:</strong> <span id="lon-value">-</span></p>
-                <p><strong>Status:</strong> <span id="location-status">-</span></p>
+<div class="maps-shell">
+    <section class="maps-header fade-in">
+        <div class="maps-title-group">
+            <p class="maps-label">SheSecure Live Maps</p>
+            <h1>See your real-time location on a familiar map view</h1>
+            <p class="maps-subtitle">
+                Start live tracking to view your position, nearby area, and shareable map link in a cleaner,
+                map-first layout designed for quick access during travel or emergencies.
+            </p>
+        </div>
+        <div class="maps-status-pill" id="header-status-pill">Tracking off</div>
+    </section>
+
+    <section class="maps-layout fade-in-up">
+        <aside class="sidebar-card">
+            <div class="search-card">
+                <div class="search-icon">+</div>
+                <div>
+                    <p class="search-label">Live address</p>
+                    <strong id="address-text">Tap start to detect your live location</strong>
+                </div>
             </div>
-        </div>
 
-        <div class="location-card fade-in-up">
-            <h3>Share Link</h3>
-            <p>Share this link with trusted contacts:</p>
-            <div class="share-link">
-                <input type="text" id="share-link" readonly value="Loading...">
-                <button type="button" class="btn btn-secondary" id="copy-link-btn">Copy Link</button>
+            <div class="action-stack">
+                <button type="button" class="btn btn-primary wide-btn" id="start-tracking-btn">Start Live Tracking</button>
+                <button type="button" class="btn btn-secondary wide-btn" id="stop-tracking-btn" disabled>Pause Tracking</button>
             </div>
-        </div>
 
-        <div class="location-card fade-in-up">
-            <h3>Safety Radius</h3>
-            <label for="radius">Set safety radius (meters):</label>
-            <input type="range" id="radius" min="100" max="5000" step="100" value="1000">
-            <p id="radius-value">1000 meters</p>
-        </div>
-    </div>
+            <div class="mini-panel">
+                <div class="mini-row">
+                    <span>Status</span>
+                    <strong id="tracking-status">Waiting to start</strong>
+                </div>
+                <div class="mini-row">
+                    <span>Last updated</span>
+                    <strong id="updated-at">-</strong>
+                </div>
+                <div class="mini-row">
+                    <span>Accuracy</span>
+                    <strong id="accuracy-value">-</strong>
+                </div>
+            </div>
+
+            <div class="quick-info-grid">
+                <div class="quick-info-card">
+                    <span>Latitude</span>
+                    <strong id="lat-value">-</strong>
+                </div>
+                <div class="quick-info-card">
+                    <span>Longitude</span>
+                    <strong id="lon-value">-</strong>
+                </div>
+            </div>
+
+            <div class="share-card">
+                <h3>Share live map</h3>
+                <p>Send a real live-tracking link instead of only raw coordinates.</p>
+                <input type="text" id="share-link" readonly value="Start tracking to generate a live map link">
+                <div class="share-actions">
+                    <button type="button" class="btn btn-secondary wide-btn" id="copy-link-btn">Copy Link</button>
+                    <button type="button" class="btn btn-primary wide-btn" id="share-whatsapp-btn">Send On WhatsApp</button>
+                </div>
+                <div class="map-links">
+                    <a id="live-share-link" href="#" target="_blank" rel="noopener">Open live tracking page</a>
+                    <a id="google-maps-link" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
+                    <a id="osm-link" href="#" target="_blank" rel="noopener">Open in OpenStreetMap</a>
+                </div>
+            </div>
+
+            <div class="radius-card">
+                <div class="radius-head">
+                    <h3>Safety radius</h3>
+                    <strong id="radius-value">1000 m</strong>
+                </div>
+                <input type="range" id="radius" min="100" max="5000" step="100" value="1000">
+                <p>Adjust the visible safety zone around your current position on the map.</p>
+            </div>
+
+            <div class="travel-card">
+                <div class="travel-head">
+                    <div>
+                        <h3>Safer travel planner</h3>
+                        <p>Go from point A to point B with a lower-risk route based on the Delhi hotspot dataset.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="travel-use-live-btn">Use Live Point A</button>
+                </div>
+
+                <p class="travel-helper-copy">
+                    Type your start place and destination place directly. You can still use live location or tap the map if you want.
+                </p>
+
+                <div class="travel-grid">
+                    <div class="travel-field travel-field-wide">
+                        <span>Start place</span>
+                        <input type="text" id="travel-start-area" placeholder="Type start place, like Rajiv Chowk Metro or North Campus">
+                        <div class="travel-inline-actions">
+                            <button type="button" class="btn btn-secondary" id="travel-pick-start-btn">Pick Start On Map</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="travel-start-lat">
+                    <input type="hidden" id="travel-start-lon">
+                    <div class="travel-field travel-field-wide">
+                        <span>Destination place</span>
+                        <input type="text" id="travel-end-area" placeholder="Type destination place, like India Gate, a hostel, office, or cafe">
+                        <div class="travel-inline-actions">
+                            <button type="button" class="btn btn-secondary" id="travel-pick-end-btn">Pick Destination On Map</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="travel-end-lat">
+                    <input type="hidden" id="travel-end-lon">
+                </div>
+
+                <div class="travel-actions">
+                    <button type="button" class="btn btn-primary wide-btn" id="travel-plan-btn">Suggest Safer Route</button>
+                    <button type="button" class="btn btn-secondary wide-btn" id="travel-clear-btn">Clear Route</button>
+                </div>
+
+                <p class="travel-feedback" id="travel-feedback">
+                    Type both places and tap suggest route.
+                </p>
+
+                <div class="travel-summary" id="travel-summary" hidden></div>
+            </div>
+        </aside>
+
+        <section class="map-stage">
+            <div class="floating-toolbar">
+                <button type="button" class="tool-chip active" id="focus-me-btn">My Location</button>
+                <a class="tool-chip" id="external-google-chip" href="#" target="_blank" rel="noopener">Google Maps</a>
+                <a class="tool-chip" id="external-osm-chip" href="#" target="_blank" rel="noopener">Street View</a>
+            </div>
+            <div id="live-map" aria-label="Live location map"></div>
+            <div class="map-footer-card">
+                <div>
+                    <span class="footer-label">Map mode</span>
+                    <strong>Live safety tracking</strong>
+                </div>
+                <div>
+                    <span class="footer-label">Best use</span>
+                    <strong>Travel, campus commute, SOS sharing</strong>
+                </div>
+            </div>
+        </section>
+    </section>
 </div>
 
 <style>
-.location-container {
-    padding: 60px 0;
+.maps-shell {
+    width: min(1280px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 28px 0 56px;
 }
 
-.location-header {
-    text-align: center;
-    margin-bottom: 40px;
+.maps-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 22px;
 }
 
-.location-header h1 {
-    font-size: 36px;
+.maps-label {
+    margin: 0 0 8px;
+    color: #188038;
+    font-size: 12px;
     font-weight: 700;
-    color: var(--accent);
-    margin: 0 0 12px 0;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
 }
 
-.location-header p {
-    font-size: 16px;
-    color: var(--text-secondary);
-    margin: 0;
-    transition: color 0.3s ease;
-}
-
-.location-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-}
-
-.location-card {
-    background: var(--card-bg);
+.maps-title-group h1 {
+    margin: 0 0 10px;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.08;
     color: var(--text-primary);
-    padding: 32px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px var(--card-shadow);
-    transition: all 0.3s ease;
 }
 
-.location-card h3 {
-    color: var(--accent);
-    margin-top: 0;
+.maps-subtitle {
+    margin: 0;
+    max-width: 760px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+}
+
+.maps-status-pill {
+    white-space: nowrap;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: #eef6ee;
+    color: #188038;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.maps-layout {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.sidebar-card,
+.map-stage {
+    position: relative;
+    min-height: 720px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 28px;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.sidebar-card {
+    padding: 20px;
+    display: grid;
+    gap: 16px;
+}
+
+.search-card,
+.mini-panel,
+.share-card,
+.radius-card,
+.travel-card {
+    border: 1px solid #e6ebf2;
+    border-radius: 22px;
+    background: #fafcff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.search-card {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    align-items: center;
+}
+
+.search-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    background: #e8f0fe;
+    color: #1967d2;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.search-label,
+.share-card p,
+.radius-card p,
+.quick-info-card span,
+.footer-label {
+    color: #5f6368;
+}
+
+.search-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.search-card strong {
+    color: #1f1f1f;
+    line-height: 1.5;
+}
+
+.action-stack {
+    display: grid;
+    gap: 10px;
+}
+
+.wide-btn {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 16px;
+    font-weight: 700;
+}
+
+.mini-panel {
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+}
+
+.mini-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+}
+
+.mini-row span {
+    color: #5f6368;
+}
+
+.mini-row strong,
+.quick-info-card strong,
+.radius-card strong,
+.map-footer-card strong {
+    color: #1f1f1f;
+}
+
+.quick-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.quick-info-card {
+    padding: 16px;
+    border-radius: 20px;
+    background: #f8f9fa;
+    border: 1px solid #e6ebf2;
+    display: grid;
+    gap: 8px;
+}
+
+.quick-info-card strong {
     font-size: 18px;
 }
 
-.location-card p {
-    color: var(--text-secondary);
-    margin: 12px 0;
-    transition: color 0.3s ease;
+.share-card,
+.radius-card,
+.travel-card {
+    padding: 18px;
 }
 
-.share-link {
+.share-card h3,
+.radius-card h3,
+.travel-card h3 {
+    margin: 0 0 8px;
+    color: #202124;
+}
+
+.share-card p,
+.radius-card p,
+.travel-card p {
+    margin: 0 0 14px;
+    line-height: 1.55;
+}
+
+.share-card input {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 13px 14px;
+    border-radius: 14px;
+    border: 1px solid #d3d9e3;
+    background: #ffffff;
+    color: #202124;
+}
+
+.map-links {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     margin-top: 12px;
+    flex-wrap: wrap;
 }
 
-.share-link input {
-    flex: 1;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
+.share-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.map-links a,
+.tool-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid #d7dde8;
+    background: #ffffff;
+    color: #1f1f1f;
+}
+
+.radius-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.travel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.travel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.travel-field {
+    display: grid;
+    gap: 8px;
+}
+
+.travel-field-wide {
+    grid-column: span 2;
+}
+
+.travel-field span {
+    color: #5f6368;
+    font-size: 13px;
+}
+
+.travel-field input {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid #d3d9e3;
+    background: #ffffff;
+    color: #202124;
+}
+
+.travel-helper-copy {
+    margin-bottom: 14px;
+    color: #5f6368;
     font-size: 14px;
 }
 
-.share-link .btn {
-    padding: 12px 20px;
+.travel-inline-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+}
+
+.travel-inline-actions .btn.active-pick {
+    background: #1a73e8;
+    border-color: #1a73e8;
+    color: #ffffff;
+}
+
+.travel-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.travel-feedback {
+    margin: 14px 0 0;
+    color: #5f6368;
+    font-size: 14px;
+}
+
+.travel-feedback.success {
+    color: #188038;
+}
+
+.travel-feedback.error {
+    color: #c5221f;
+}
+
+.travel-summary {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.travel-summary-card {
+    padding: 14px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #e6ebf2;
+}
+
+.travel-summary-card strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #202124;
+}
+
+.travel-summary-card p {
+    margin: 0;
+    color: #5f6368;
+    font-size: 14px;
+}
+
+.travel-link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 #radius {
     width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: linear-gradient(90deg, #4caf50, #ffc107, #f44336);
-    outline: none;
-    -webkit-appearance: none;
 }
 
-#radius::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--accent-2);
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.map-stage {
+    overflow: hidden;
+    background: #dfe7f2;
 }
 
-#radius::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--accent-2);
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.floating-toolbar {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    z-index: 500;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-#location-display p {
-    margin: 8px 0;
-    font-size: 14px;
+.tool-chip {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
-@media (max-width: 768px) {
-    .location-grid {
+.tool-chip.active {
+    background: #1a73e8;
+    color: #ffffff;
+    border-color: #1a73e8;
+}
+
+#live-map {
+    width: 100%;
+    height: 100%;
+    min-height: 720px;
+}
+
+#live-map.map-pick-mode {
+    cursor: crosshair;
+}
+
+.map-footer-card {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    z-index: 500;
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    padding: 14px 18px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.footer-label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.leaflet-control-zoom a {
+    border-radius: 14px;
+}
+
+.travel-start-pin {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #0f766e;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+}
+
+.travel-end-pin {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #1d4ed8;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+}
+
+.travel-waypoint-pin {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: #f59e0b;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 1120px) {
+    .maps-layout {
         grid-template-columns: 1fr;
     }
 
-    .share-link {
+    .sidebar-card,
+    .map-stage,
+    #live-map {
+        min-height: 520px;
+    }
+}
+
+@media (max-width: 720px) {
+    .maps-shell {
+        width: min(100% - 18px, 100%);
+        padding-top: 20px;
+    }
+
+    .maps-header {
         flex-direction: column;
     }
 
-    .share-link .btn {
-        width: 100%;
+    .sidebar-card,
+    .map-stage {
+        border-radius: 22px;
+    }
+
+    .quick-info-grid,
+    .share-actions,
+    .travel-grid,
+    .travel-actions,
+    .map-footer-card,
+    .floating-toolbar,
+    .map-links {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+
+    .map-footer-card {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        align-items: flex-start;
+    }
+
+    .travel-field-wide {
+        grid-column: span 1;
+    }
+
+    #live-map {
+        min-height: 480px;
     }
 }
 </style>
 
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+></script>
+
 <script>
-document.getElementById('get-location-btn').addEventListener('click', function() {
-    if (navigator.geolocation) {
-        this.textContent = 'Getting location...';
-        navigator.geolocation.getCurrentPosition(function(position) {
-            const lat = position.coords.latitude.toFixed(6);
-            const lon = position.coords.longitude.toFixed(6);
-            
-            document.getElementById('lat-value').textContent = lat;
-            document.getElementById('lon-value').textContent = lon;
-            document.getElementById('location-status').textContent = 'Active';
-            document.getElementById('location-display').style.display = 'block';
-            document.getElementById('share-link').value = `${window.location.origin}/location/${lat}/${lon}`;
-            document.getElementById('get-location-btn').textContent = 'Location Shared ✓';
+const startTrackingButton = document.getElementById('start-tracking-btn');
+const stopTrackingButton = document.getElementById('stop-tracking-btn');
+const trackingStatus = document.getElementById('tracking-status');
+const headerStatusPill = document.getElementById('header-status-pill');
+const addressText = document.getElementById('address-text');
+const latValue = document.getElementById('lat-value');
+const lonValue = document.getElementById('lon-value');
+const accuracyValue = document.getElementById('accuracy-value');
+const updatedAt = document.getElementById('updated-at');
+const shareLinkInput = document.getElementById('share-link');
+const copyLinkButton = document.getElementById('copy-link-btn');
+const shareWhatsAppButton = document.getElementById('share-whatsapp-btn');
+const radiusSlider = document.getElementById('radius');
+const radiusValue = document.getElementById('radius-value');
+const liveShareLink = document.getElementById('live-share-link');
+const googleMapsLink = document.getElementById('google-maps-link');
+const osmLink = document.getElementById('osm-link');
+const externalGoogleChip = document.getElementById('external-google-chip');
+const externalOsmChip = document.getElementById('external-osm-chip');
+const focusMeButton = document.getElementById('focus-me-btn');
+const travelUseLiveButton = document.getElementById('travel-use-live-btn');
+const travelPlanButton = document.getElementById('travel-plan-btn');
+const travelClearButton = document.getElementById('travel-clear-btn');
+const travelFeedback = document.getElementById('travel-feedback');
+const travelSummary = document.getElementById('travel-summary');
+const travelStartAreaInput = document.getElementById('travel-start-area');
+const travelStartLatInput = document.getElementById('travel-start-lat');
+const travelStartLonInput = document.getElementById('travel-start-lon');
+const travelEndAreaInput = document.getElementById('travel-end-area');
+const travelEndLatInput = document.getElementById('travel-end-lat');
+const travelEndLonInput = document.getElementById('travel-end-lon');
+const travelPickStartButton = document.getElementById('travel-pick-start-btn');
+const travelPickEndButton = document.getElementById('travel-pick-end-btn');
+
+const routeHotspots = {{ route_hotspots|default([])|tojson }};
+const routeHotspotLookup = new Map(
+    routeHotspots.map(hotspot => [String(hotspot.name || '').trim().toUpperCase(), hotspot])
+);
+
+let map = null;
+let marker = null;
+let accuracyCircle = null;
+let trackingWatcherId = null;
+let geocodeAbortController = null;
+let travelRouteLayers = [];
+let travelPointLayers = [];
+let travelDraftLine = null;
+let pendingTravelPick = '';
+let latestLiveShareUrl = '';
+
+function initMap() {
+    map = L.map('live-map', {
+        zoomControl: false
+    }).setView([20.5937, 78.9629], 5);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+
+    map.on('click', async function (event) {
+        if (!pendingTravelPick) {
+            return;
+        }
+
+        const pointType = pendingTravelPick;
+        const { lat, lng } = event.latlng;
+        const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+        setTravelPoint(pointType, lat, lng, fallbackLabel, { focusMap: false });
+        toggleTravelPickMode('');
+
+        try {
+            const addressLabel = await lookupAddressLabel(lat, lng);
+            setTravelPoint(pointType, lat, lng, addressLabel, { focusMap: false });
+        } catch (error) {
+            // Keep the coordinate label if reverse geocoding is unavailable.
+        }
+
+        setTravelFeedback(
+            pointType === 'start'
+                ? 'Point A selected from the map.'
+                : 'Destination selected from the map.',
+            'success'
+        );
+    });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function setTravelFeedback(message, type = '') {
+    if (!travelFeedback) {
+        return;
+    }
+
+    travelFeedback.textContent = message;
+    travelFeedback.className = `travel-feedback ${type}`.trim();
+}
+
+function findTravelAreaByName(name) {
+    if (!name) {
+        return null;
+    }
+
+    return routeHotspotLookup.get(String(name).trim().toUpperCase()) || null;
+}
+
+function fillTravelCoordinatesFromArea(areaInput, latInput, lonInput) {
+    const area = findTravelAreaByName(areaInput?.value);
+    if (!area || !latInput || !lonInput) {
+        return false;
+    }
+
+    latInput.value = area.lat;
+    lonInput.value = area.lon;
+    return true;
+}
+
+function getTravelPointElements(pointType) {
+    if (pointType === 'start') {
+        return {
+            label: 'point A',
+            queryInput: travelStartAreaInput,
+            latInput: travelStartLatInput,
+            lonInput: travelStartLonInput,
+            pickButton: travelPickStartButton,
+            markerClass: 'travel-start-pin'
+        };
+    }
+
+    return {
+        label: 'destination',
+        queryInput: travelEndAreaInput,
+        latInput: travelEndLatInput,
+        lonInput: travelEndLonInput,
+        pickButton: travelPickEndButton,
+        markerClass: 'travel-end-pin'
+    };
+}
+
+function parseCoordinatePair(value) {
+    const match = String(value || '')
+        .trim()
+        .match(/(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)/);
+
+    if (!match) {
+        return null;
+    }
+
+    const lat = Number(match[1]);
+    const lon = Number(match[2]);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) {
+        return null;
+    }
+
+    return { lat, lon };
+}
+
+async function searchPlaceCoordinates(query) {
+    const requestUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
+    const response = await fetch(requestUrl, {
+        headers: {
+            Accept: 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Place search is unavailable right now.');
+    }
+
+    const results = await response.json();
+    const firstResult = Array.isArray(results) ? results[0] : null;
+    if (!firstResult) {
+        throw new Error('No matching spot was found. Try a clearer place name or tap the map.');
+    }
+
+    return {
+        lat: Number(firstResult.lat),
+        lon: Number(firstResult.lon),
+        label: firstResult.display_name || query
+    };
+}
+
+async function lookupAddressLabel(latitude, longitude, signal) {
+    const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+        {
+            signal,
+            headers: {
+                Accept: 'application/json'
+            }
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error('Address lookup failed.');
+    }
+
+    const data = await response.json();
+    return data.display_name || `${Number(latitude).toFixed(5)}, ${Number(longitude).toFixed(5)}`;
+}
+
+function clearTravelPointLayers() {
+    travelPointLayers.forEach(layer => map.removeLayer(layer));
+    travelPointLayers = [];
+
+    if (travelDraftLine) {
+        map.removeLayer(travelDraftLine);
+        travelDraftLine = null;
+    }
+}
+
+function renderTravelPointPreview() {
+    if (!map) {
+        return;
+    }
+
+    clearTravelPointLayers();
+
+    const pointConfigs = ['start', 'destination']
+        .map(pointType => {
+            const { queryInput, latInput, lonInput, markerClass } = getTravelPointElements(pointType);
+            const lat = readTravelCoordinate(latInput);
+            const lon = readTravelCoordinate(lonInput);
+            if (Number.isNaN(lat) || Number.isNaN(lon)) {
+                return null;
+            }
+
+            return {
+                pointType,
+                markerClass,
+                label: queryInput?.value?.trim() || `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+                lat,
+                lon
+            };
+        })
+        .filter(Boolean);
+
+    pointConfigs.forEach(point => {
+        const marker = L.marker([point.lat, point.lon], {
+            icon: createTravelMarkerIcon(point.markerClass)
+        }).bindPopup(`<strong>${escapeHtml(point.label)}</strong><br>${escapeHtml(point.lat.toFixed(5))}, ${escapeHtml(point.lon.toFixed(5))}`);
+        marker.addTo(map);
+        travelPointLayers.push(marker);
+    });
+
+    if (pointConfigs.length === 2) {
+        travelDraftLine = L.polyline(
+            pointConfigs.map(point => [point.lat, point.lon]),
+            {
+                color: '#94a3b8',
+                weight: 3,
+                opacity: 0.8,
+                dashArray: '6 8'
+            }
+        ).addTo(map);
+    }
+}
+
+function setTravelPoint(pointType, latitude, longitude, label = '', options = {}) {
+    const { queryInput, latInput, lonInput } = getTravelPointElements(pointType);
+    if (!latInput || !lonInput) {
+        return;
+    }
+
+    latInput.value = Number(latitude).toFixed(5);
+    lonInput.value = Number(longitude).toFixed(5);
+
+    if (queryInput && label) {
+        queryInput.value = label;
+    }
+
+    renderTravelPointPreview();
+
+    if (options.focusMap && map) {
+        map.flyTo([Number(latitude), Number(longitude)], Math.max(map.getZoom(), 14), {
+            animate: true,
+            duration: 0.9
+        });
+    }
+}
+
+function clearTravelPointResolution(pointType) {
+    const { latInput, lonInput } = getTravelPointElements(pointType);
+    if (!latInput || !lonInput) {
+        return;
+    }
+
+    latInput.value = '';
+    lonInput.value = '';
+    renderTravelPointPreview();
+}
+
+function toggleTravelPickMode(pointType = '') {
+    pendingTravelPick = pointType;
+
+    [travelPickStartButton, travelPickEndButton].forEach(button => {
+        button?.classList.remove('active-pick');
+    });
+
+    if (map) {
+        map.getContainer().classList.toggle('map-pick-mode', Boolean(pointType));
+    }
+
+    if (pointType === 'start') {
+        travelPickStartButton?.classList.add('active-pick');
+        setTravelFeedback('Tap the map to choose point A.', 'success');
+    } else if (pointType === 'destination') {
+        travelPickEndButton?.classList.add('active-pick');
+        setTravelFeedback('Tap the map to choose your destination.', 'success');
+    }
+}
+
+async function resolveTravelPoint(pointType, options = {}) {
+    const { queryInput, latInput, lonInput, label } = getTravelPointElements(pointType);
+    const query = queryInput?.value?.trim() || '';
+    const latitude = readTravelCoordinate(latInput);
+    const longitude = readTravelCoordinate(lonInput);
+
+    if (!options.preferQuery && !Number.isNaN(latitude) && !Number.isNaN(longitude)) {
+        renderTravelPointPreview();
+        return {
+            lat: latitude,
+            lon: longitude,
+            label: query || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+        };
+    }
+
+    if (!query) {
+        if (!options.silent) {
+            setTravelFeedback(`Type the ${label} name or tap the map first.`, 'error');
+        }
+        return null;
+    }
+
+    if (fillTravelCoordinatesFromArea(queryInput, latInput, lonInput)) {
+        const matchedArea = findTravelAreaByName(queryInput.value);
+        setTravelPoint(pointType, Number(latInput.value), Number(lonInput.value), matchedArea?.name || query, {
+            focusMap: Boolean(options.focusMap)
+        });
+        return {
+            lat: Number(latInput.value),
+            lon: Number(lonInput.value),
+            label: matchedArea?.name || query
+        };
+    }
+
+    const coordinatePair = parseCoordinatePair(query);
+    if (coordinatePair) {
+        setTravelPoint(pointType, coordinatePair.lat, coordinatePair.lon, query, {
+            focusMap: Boolean(options.focusMap)
+        });
+        return {
+            lat: coordinatePair.lat,
+            lon: coordinatePair.lon,
+            label: query
+        };
+    }
+
+    try {
+        const place = await searchPlaceCoordinates(query);
+        setTravelPoint(pointType, place.lat, place.lon, place.label, {
+            focusMap: options.focusMap !== false
+        });
+        return place;
+    } catch (error) {
+        if (!options.silent) {
+            setTravelFeedback(error.message || `Unable to find the ${label}.`, 'error');
+        }
+        return null;
+    }
+}
+
+function syncTravelStartWithLiveLocation(latitude, longitude) {
+    if (!travelStartLatInput || !travelStartLonInput) {
+        return;
+    }
+
+    if (!travelStartLatInput.value.trim()) {
+        travelStartLatInput.value = Number(latitude).toFixed(5);
+    }
+    if (!travelStartLonInput.value.trim()) {
+        travelStartLonInput.value = Number(longitude).toFixed(5);
+    }
+
+    if (travelStartAreaInput && !travelStartAreaInput.value.trim()) {
+        travelStartAreaInput.value = 'My live location';
+    }
+
+    renderTravelPointPreview();
+}
+
+function createTravelMarkerIcon(className) {
+    return L.divIcon({
+        className: '',
+        html: `<span class="${className}"></span>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
+}
+
+function clearTravelRouteLayers() {
+    travelRouteLayers.forEach(layer => map.removeLayer(layer));
+    travelRouteLayers = [];
+
+    if (travelSummary) {
+        travelSummary.hidden = true;
+        travelSummary.innerHTML = '';
+    }
+}
+
+function addTravelRouteLayer(layer) {
+    layer.addTo(map);
+    travelRouteLayers.push(layer);
+}
+
+function buildGoogleMapsRouteUrl(result) {
+    const waypoints = result.recommended_route?.waypoints || [];
+    if (waypoints.length < 2) {
+        return '';
+    }
+
+    const origin = `${waypoints[0].lat},${waypoints[0].lon}`;
+    const destination = `${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lon}`;
+    const middle = waypoints.slice(1, -1).slice(0, 3).map(point => `${point.lat},${point.lon}`).join('|');
+    const params = new URLSearchParams({
+        api: '1',
+        origin,
+        destination,
+        travelmode: 'driving'
+    });
+
+    if (middle) {
+        params.set('waypoints', middle);
+    }
+
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+async function fetchRoadRouteGeometry(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return null;
+    }
+
+    const coordinates = points
+        .map(point => `${Number(point.lon).toFixed(6)},${Number(point.lat).toFixed(6)}`)
+        .join(';');
+    const requestUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false&continue_straight=true`;
+    const response = await fetch(requestUrl, {
+        headers: {
+            Accept: 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Road routing is unavailable right now.');
+    }
+
+    const data = await response.json();
+    const route = data?.routes?.[0];
+    if (!route?.geometry?.coordinates?.length) {
+        throw new Error('Road route geometry could not be created.');
+    }
+
+    return {
+        latLngs: route.geometry.coordinates.map(coordinate => [Number(coordinate[1]), Number(coordinate[0])]),
+        distanceKm: Number(route.distance || 0) / 1000,
+        durationMinutes: Number(route.duration || 0) / 60
+    };
+}
+
+function renderTravelSummary(result) {
+    if (!travelSummary) {
+        return;
+    }
+
+    const recommended = result.recommended_route || {};
+    const direct = result.direct_route || {};
+    const googleRouteUrl = buildGoogleMapsRouteUrl(result);
+    const avoidedList = (result.avoided_hotspots || []).slice(0, 3).map(hotspot => hotspot.name).join(', ');
+
+    travelSummary.hidden = false;
+    travelSummary.innerHTML = `
+        <div class="travel-summary-card">
+            <strong>${escapeHtml(recommended.name || 'Safer route')}</strong>
+            <p>${escapeHtml(recommended.summary || 'Safer route recommendation ready.')}</p>
+        </div>
+        <div class="travel-summary-card">
+            <strong>Route comparison</strong>
+            <p>
+                Recommended: ${escapeHtml(recommended.distance_km ?? 0)} km, ${escapeHtml(recommended.risk_label || 'Lower-risk')}, score ${escapeHtml(recommended.route_score ?? 0)}.
+                Direct: ${escapeHtml(direct.distance_km ?? 0)} km, ${escapeHtml(direct.risk_label || 'Guarded')}, score ${escapeHtml(direct.route_score ?? 0)}.
+            </p>
+        </div>
+        <div class="travel-summary-card">
+            <strong>Hotspots avoided</strong>
+            <p>${escapeHtml(avoidedList || 'No major hotspot escape detected, but this is still the lowest-risk path from the dataset.')}</p>
+        </div>
+        <div class="travel-link-row">
+            <a class="tool-chip" href="${googleRouteUrl || '#'}" ${googleRouteUrl ? 'target="_blank" rel="noopener"' : ''}>Open safer route in Google Maps</a>
+        </div>
+    `;
+}
+
+async function renderTravelRoute(result) {
+    clearTravelRouteLayers();
+    clearTravelPointLayers();
+
+    const recommendedPoints = result.recommended_route?.points || [];
+    const directRoutePoints = result.direct_route?.points || [];
+    const hotspots = result.display_hotspots || [];
+    const bounds = [];
+    let saferRoadRoute = null;
+    let directRoadRoute = null;
+
+    try {
+        [saferRoadRoute, directRoadRoute] = await Promise.all([
+            fetchRoadRouteGeometry(recommendedPoints),
+            fetchRoadRouteGeometry(directRoutePoints)
+        ]);
+    } catch (error) {
+        console.warn('Road routing fallback engaged:', error);
+    }
+
+    const saferPoints = saferRoadRoute?.latLngs || recommendedPoints.map(point => [Number(point.lat), Number(point.lon)]);
+    const directPoints = directRoadRoute?.latLngs || directRoutePoints.map(point => [Number(point.lat), Number(point.lon)]);
+
+    if (saferRoadRoute) {
+        result.recommended_route.distance_km = Number(saferRoadRoute.distanceKm.toFixed(2));
+        result.recommended_route.estimated_minutes = Math.max(4, Math.round(saferRoadRoute.durationMinutes));
+    }
+
+    if (directRoadRoute) {
+        result.direct_route.distance_km = Number(directRoadRoute.distanceKm.toFixed(2));
+    }
+
+    if (saferRoadRoute && directRoadRoute) {
+        result.recommended_route.extra_distance_km = Number(
+            Math.max(0, saferRoadRoute.distanceKm - directRoadRoute.distanceKm).toFixed(2)
+        );
+    }
+
+    hotspots.slice(0, 14).forEach(hotspot => {
+        const latLng = [Number(hotspot.lat), Number(hotspot.lon)];
+        bounds.push(latLng);
+        addTravelRouteLayer(
+            L.circleMarker(latLng, {
+                radius: Math.max(5, Math.min(10, Number(hotspot.women_risk_score || 0) / 8)),
+                color: '#dc2626',
+                weight: 1,
+                fillColor: '#ef4444',
+                fillOpacity: 0.22
+            }).bindPopup(`
+                <strong>${escapeHtml(hotspot.name)}</strong><br>
+                Women safety score: ${escapeHtml(Number(hotspot.women_risk_score || 0).toFixed(1))}<br>
+                Crime band: ${escapeHtml(hotspot.risk_band || 'High')}
+            `)
+        );
+    });
+
+    if (directPoints.length) {
+        directPoints.forEach(point => bounds.push(point));
+        addTravelRouteLayer(
+            L.polyline(directPoints, {
+                color: '#f97316',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '8 10'
+            }).bindPopup(`<strong>Direct route</strong><br>Risk score ${escapeHtml(result.direct_route?.route_score ?? 0)}`)
+        );
+    }
+
+    if (saferPoints.length) {
+        saferPoints.forEach(point => bounds.push(point));
+        addTravelRouteLayer(
+            L.polyline(saferPoints, {
+                color: '#0f766e',
+                weight: 6,
+                opacity: 0.95
+            }).bindPopup(`<strong>${escapeHtml(result.recommended_route?.name || 'Safer route')}</strong><br>${escapeHtml(result.recommended_route?.risk_label || 'Lower-risk')}`)
+        );
+    }
+
+    const waypoints = result.recommended_route?.waypoints || [];
+    waypoints.forEach((waypoint, index) => {
+        const latLng = [Number(waypoint.lat), Number(waypoint.lon)];
+        bounds.push(latLng);
+        const iconClass = index === 0 ? 'travel-start-pin' : (index === waypoints.length - 1 ? 'travel-end-pin' : 'travel-waypoint-pin');
+        addTravelRouteLayer(
+            L.marker(latLng, {
+                icon: createTravelMarkerIcon(iconClass)
+            }).bindPopup(`<strong>${escapeHtml(waypoint.label)}</strong><br>${escapeHtml(waypoint.lat)}, ${escapeHtml(waypoint.lon)}`)
+        );
+    });
+
+    renderTravelSummary(result);
+
+    if (bounds.length) {
+        map.fitBounds(bounds, { padding: [28, 28] });
+    }
+}
+
+function updateTrackingState(isTracking, label) {
+    trackingStatus.textContent = label;
+    headerStatusPill.textContent = isTracking ? 'Tracking on' : 'Tracking off';
+    headerStatusPill.style.background = isTracking ? '#e6f4ea' : '#f1f3f4';
+    headerStatusPill.style.color = isTracking ? '#188038' : '#5f6368';
+    startTrackingButton.disabled = isTracking;
+    stopTrackingButton.disabled = !isTracking;
+}
+
+function updateMapPosition(latitude, longitude, accuracy) {
+    const position = [latitude, longitude];
+
+    if (!marker) {
+        marker = L.marker(position).addTo(map);
+    } else {
+        marker.setLatLng(position);
+    }
+
+    const radius = Number(radiusSlider.value);
+    if (!accuracyCircle) {
+        accuracyCircle = L.circle(position, {
+            radius: Math.max(radius, accuracy || 0),
+            color: '#1a73e8',
+            weight: 2,
+            fillColor: '#8ab4f8',
+            fillOpacity: 0.2
+        }).addTo(map);
+    } else {
+        accuracyCircle.setLatLng(position);
+        accuracyCircle.setRadius(Math.max(radius, accuracy || 0));
+    }
+
+    map.flyTo(position, 16, {
+        animate: true,
+        duration: 1.2
+    });
+}
+
+function buildShareLinks(latitude, longitude) {
+    const googleLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    const openStreetMapLink = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=17/${latitude}/${longitude}`;
+
+    googleMapsLink.href = googleLink;
+    osmLink.href = openStreetMapLink;
+    externalGoogleChip.href = googleLink;
+    externalOsmChip.href = openStreetMapLink;
+}
+
+async function updateLiveShareLink(latitude, longitude) {
+    if (typeof ensureLiveShareSession !== 'function') {
+        latestLiveShareUrl = '';
+        shareLinkInput.value = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        if (liveShareLink) {
+            liveShareLink.href = '#';
+        }
+        return;
+    }
+
+    try {
+        const liveShare = await ensureLiveShareSession({
+            lat: Number(latitude),
+            lon: Number(longitude)
+        });
+        latestLiveShareUrl = liveShare.shareUrl || '';
+        shareLinkInput.value = latestLiveShareUrl || `https://www.google.com/maps?q=${latitude},${longitude}`;
+        if (liveShareLink) {
+            liveShareLink.href = latestLiveShareUrl || '#';
+        }
+    } catch (error) {
+        console.warn('Unable to refresh live share link:', error);
+        latestLiveShareUrl = '';
+        shareLinkInput.value = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        if (liveShareLink) {
+            liveShareLink.href = '#';
+        }
+    }
+}
+
+function buildWhatsAppLiveShareMessage() {
+    const activeLink = latestLiveShareUrl || shareLinkInput.value || '';
+    if (!activeLink || activeLink.startsWith('Start tracking')) {
+        return '';
+    }
+
+    if (typeof window.buildLiveLocationMessage === 'function') {
+        const lat = Number(latValue.textContent || 0);
+        const lon = Number(lonValue.textContent || 0);
+        return window.buildLiveLocationMessage({ lat, lon }, activeLink);
+    }
+
+    return `Live location update from SheSecure.\nTrack me live here: ${activeLink}`;
+}
+
+async function shareLiveLinkOnWhatsApp() {
+    const activeLink = latestLiveShareUrl || shareLinkInput.value || '';
+    if (!activeLink || activeLink.startsWith('Start tracking')) {
+        setTravelFeedback('Start live tracking first so the live link can be shared.', 'error');
+        return;
+    }
+
+    if (typeof window.loadContactsList !== 'function' || typeof window.openWhatsAppComposer !== 'function') {
+        await navigator.clipboard.writeText(activeLink);
+        setTravelFeedback('WhatsApp share is unavailable here, but the live link was copied.', 'success');
+        return;
+    }
+
+    const contacts = window.loadContactsList() || [];
+    if (!contacts.length) {
+        setTravelFeedback('Add trusted contacts first so the live link can be sent on WhatsApp.', 'error');
+        return;
+    }
+
+    const message = buildWhatsAppLiveShareMessage();
+    window.openWhatsAppComposer(contacts, message);
+    setTravelFeedback(`Opened WhatsApp with the live link for ${contacts.length} trusted contact(s).`, 'success');
+}
+
+async function reverseGeocode(latitude, longitude) {
+    if (geocodeAbortController) {
+        geocodeAbortController.abort();
+    }
+
+    geocodeAbortController = new AbortController();
+
+    try {
+        addressText.textContent = await lookupAddressLabel(latitude, longitude, geocodeAbortController.signal);
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            addressText.textContent = 'Live address could not be loaded';
+        }
+    }
+}
+
+function updateLocationDetails(position) {
+    const latitude = position.coords.latitude.toFixed(6);
+    const longitude = position.coords.longitude.toFixed(6);
+    const accuracy = Math.round(position.coords.accuracy || 0);
+
+    latValue.textContent = latitude;
+    lonValue.textContent = longitude;
+    accuracyValue.textContent = `${accuracy} m`;
+    updatedAt.textContent = new Date().toLocaleTimeString();
+
+    updateMapPosition(Number(latitude), Number(longitude), accuracy);
+    buildShareLinks(latitude, longitude);
+    updateLiveShareLink(latitude, longitude);
+    reverseGeocode(latitude, longitude);
+    syncTravelStartWithLiveLocation(latitude, longitude);
+}
+
+function handleLocationError(error) {
+    updateTrackingState(false, 'Location unavailable');
+    addressText.textContent = error.message || 'Please allow location access to use live tracking';
+}
+
+function startLiveTracking() {
+    if (!navigator.geolocation) {
+        handleLocationError({ message: 'Geolocation is not supported in this browser' });
+        return;
+    }
+
+    updateTrackingState(true, 'Starting live tracking...');
+    addressText.textContent = 'Getting your current position...';
+
+    trackingWatcherId = navigator.geolocation.watchPosition(
+        (position) => {
+            updateTrackingState(true, 'Live tracking active');
+            updateLocationDetails(position);
+        },
+        (error) => {
+            const errorMessage = error && error.message ? error.message : 'Unable to detect live location';
+            handleLocationError({ message: errorMessage });
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+}
+
+function stopLiveTracking() {
+    if (trackingWatcherId !== null) {
+        navigator.geolocation.clearWatch(trackingWatcherId);
+        trackingWatcherId = null;
+    }
+
+    updateTrackingState(false, 'Tracking paused');
+    addressText.textContent = 'Live tracking paused. Start again to refresh your map.';
+}
+
+function readTravelCoordinate(input) {
+    const value = input?.value?.trim();
+    return value ? Number(value) : Number.NaN;
+}
+
+async function useLivePointA() {
+    if (!navigator.geolocation) {
+        setTravelFeedback('Geolocation is not supported in this browser.', 'error');
+        return;
+    }
+
+    travelUseLiveButton.disabled = true;
+    travelUseLiveButton.textContent = 'Locating...';
+
+    try {
+        const location = await getCurrentLocation();
+        setTravelPoint('start', location.lat, location.lon, 'My live location', {
+            focusMap: true
+        });
+        syncTravelStartWithLiveLocation(location.lat, location.lon);
+        setTravelFeedback('Your live location is now point A.', 'success');
+    } catch (error) {
+        setTravelFeedback(error.message || 'Unable to get live location for point A.', 'error');
+    } finally {
+        travelUseLiveButton.disabled = false;
+        travelUseLiveButton.textContent = 'Use Live Point A';
+    }
+}
+
+async function requestTravelRoute() {
+    const [startPoint, endPoint] = await Promise.all([
+        resolveTravelPoint('start', { silent: true, preferQuery: true }),
+        resolveTravelPoint('destination', { silent: true, preferQuery: true })
+    ]);
+
+    const startLat = readTravelCoordinate(travelStartLatInput);
+    const startLon = readTravelCoordinate(travelStartLonInput);
+    const endLat = readTravelCoordinate(travelEndLatInput);
+    const endLon = readTravelCoordinate(travelEndLonInput);
+
+    if (!startPoint || !endPoint || [startLat, startLon, endLat, endLon].some(value => Number.isNaN(value))) {
+        setTravelFeedback('Choose both point A and destination with search, coordinates, or map pick first.', 'error');
+        return;
+    }
+
+    travelPlanButton.disabled = true;
+    travelPlanButton.textContent = 'Analyzing...';
+
+    try {
+        const response = await fetch('/api/safer-route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                start: { lat: startLat, lon: startLon },
+                destination: { lat: endLat, lon: endLon }
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok || data.status !== 'success') {
+            throw new Error(data.message || 'Unable to suggest the safer route.');
+        }
+
+        await renderTravelRoute(data);
+        setTravelFeedback('Safer route added to the live map.', 'success');
+    } catch (error) {
+        setTravelFeedback(error.message || 'Unable to suggest the safer route right now.', 'error');
+    } finally {
+        travelPlanButton.disabled = false;
+        travelPlanButton.textContent = 'Suggest Safer Route';
+    }
+}
+
+function clearTravelRoute() {
+    clearTravelRouteLayers();
+    renderTravelPointPreview();
+    setTravelFeedback('Safer travel overlay cleared from the map.', 'success');
+}
+
+startTrackingButton.addEventListener('click', startLiveTracking);
+stopTrackingButton.addEventListener('click', stopLiveTracking);
+
+focusMeButton.addEventListener('click', function () {
+    if (marker) {
+        map.flyTo(marker.getLatLng(), 17, {
+            animate: true,
+            duration: 1
         });
     }
 });
 
-document.getElementById('copy-link-btn').addEventListener('click', function() {
-    const link = document.getElementById('share-link');
-    link.select();
-    document.execCommand('copy');
-    this.textContent = 'Copied!';
-    setTimeout(() => this.textContent = 'Copy Link', 2000);
+copyLinkButton.addEventListener('click', async function () {
+    if (!shareLinkInput.value || shareLinkInput.value.startsWith('Start tracking')) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(shareLinkInput.value);
+        copyLinkButton.textContent = 'Copied';
+        setTimeout(() => {
+            copyLinkButton.textContent = 'Copy Link';
+        }, 1800);
+    } catch (error) {
+        shareLinkInput.select();
+        document.execCommand('copy');
+        copyLinkButton.textContent = 'Copied';
+        setTimeout(() => {
+            copyLinkButton.textContent = 'Copy Link';
+        }, 1800);
+    }
 });
 
-document.getElementById('radius').addEventListener('change', function() {
-    document.getElementById('radius-value').textContent = this.value + ' meters';
+shareWhatsAppButton?.addEventListener('click', function () {
+    shareLiveLinkOnWhatsApp();
 });
+
+radiusSlider.addEventListener('input', function () {
+    radiusValue.textContent = `${this.value} m`;
+    if (accuracyCircle && marker) {
+        accuracyCircle.setLatLng(marker.getLatLng());
+        accuracyCircle.setRadius(Number(this.value));
+    }
+});
+
+[travelStartAreaInput, travelEndAreaInput].forEach((input, index) => {
+    input?.addEventListener('input', function () {
+        if (index === 0) {
+            clearTravelPointResolution('start');
+        } else {
+            clearTravelPointResolution('destination');
+        }
+    });
+
+    input?.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            requestTravelRoute();
+        }
+    });
+});
+
+[travelStartLatInput, travelStartLonInput, travelEndLatInput, travelEndLonInput].forEach(input => {
+    input?.addEventListener('change', function () {
+        renderTravelPointPreview();
+    });
+});
+
+travelUseLiveButton?.addEventListener('click', useLivePointA);
+travelPickStartButton?.addEventListener('click', function () {
+    toggleTravelPickMode(pendingTravelPick === 'start' ? '' : 'start');
+});
+travelPickEndButton?.addEventListener('click', function () {
+    toggleTravelPickMode(pendingTravelPick === 'destination' ? '' : 'destination');
+});
+travelPlanButton?.addEventListener('click', requestTravelRoute);
+travelClearButton?.addEventListener('click', clearTravelRoute);
+
+initMap();
 </script>
 {% endblock %}
