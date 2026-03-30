@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*.log
+.vscode/
+
+instance/*.json
+!instance/*.example.json

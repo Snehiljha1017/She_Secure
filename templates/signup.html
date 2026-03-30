@@ -3,159 +3,68 @@
 {% block title %}Sign Up - SheSecure{% endblock %}
 
 {% block content %}
-<div class="auth-container">
-    <div class="auth-card fade-in">
-        <div class="auth-header">
-            <h1>Create Account</h1>
-            <p>Join SheSecure today</p>
+<section class="auth-shell">
+    <div class="auth-stage">
+        <div class="auth-story fade-in">
+            <span class="eyebrow">Create your secure profile</span>
+            <h1>Build your personal safety workspace.</h1>
+            <p>
+                Register once to keep trusted contacts, safety tools, and dashboard access
+                in one place.
+            </p>
+
+            <div class="story-grid">
+                <article class="story-card">
+                    <span class="story-kicker">Contacts</span>
+                    <h2>Keep your circle ready</h2>
+                    <p>Save the people you trust most for faster emergency coordination.</p>
+                </article>
+                <article class="story-card">
+                    <span class="story-kicker">Tools</span>
+                    <h2>Use one connected hub</h2>
+                    <p>Prediction, counselling, data, and emergency support live together.</p>
+                </article>
+            </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <form class="auth-form" id="signup-form" method="POST">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required placeholder="Choose a username">
+        <div class="auth-card fade-in-up">
+            <div class="auth-card-header">
+                <span class="auth-badge">New Account</span>
+                <h2>Create Account</h2>
+                <p>Join SheSecure today</p>
             </div>
 
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="your@email.com">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form class="auth-form" id="signup-form" method="POST">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required placeholder="Choose a username">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="your@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Create a secure password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{{ url_for('login') }}">Sign in here</a></p>
             </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="••••••••">
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block">Create Account</button>
-        </form>
-
-        <div class="auth-footer">
-            <p>Already have an account? <a href="/login">Sign in here</a></p>
         </div>
     </div>
-</div>
-
-<style>
-.auth-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 200px);
-    padding: 40px 20px;
-    background-color: var(--bg-primary);
-    transition: background-color 0.3s ease;
-}
-
-.auth-card {
-    width: 100%;
-    max-width: 400px;
-    background: var(--card-bg);
-    color: var(--text-primary);
-    padding: 40px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 8px 32px var(--card-shadow);
-    animation: slideInUp 0.5s ease-out;
-    transition: all 0.3s ease;
-}
-
-.auth-header {
-    text-align: center;
-    margin-bottom: 32px;
-}
-
-.auth-header h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--accent);
-    margin: 0 0 8px 0;
-}
-
-.auth-header p {
-    color: var(--text-secondary);
-    margin: 0;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-}
-
-.form-group input {
-    padding: 12px;
-    background-color: var(--input-bg);
-    color: var(--text-primary);
-    border: 2px solid var(--input-border);
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: var(--accent-2);
-    box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.15);
-}
-
-body.theme-dark .form-group input:focus {
-    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
-}
-
-body.theme-high-contrast .form-group input:focus {
-    box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.3);
-}
-
-.btn-block {
-    width: 100%;
-    margin-top: 8px;
-}
-
-.auth-footer {
-    text-align: center;
-    margin-top: 24px;
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-.auth-footer a {
-    color: var(--accent-2);
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.auth-footer a:hover {
-    text-decoration: underline;
-}
-
-@media (max-width: 600px) {
-    .auth-card {
-        padding: 24px;
-    }
-
-    .auth-header h1 {
-        font-size: 24px;
-    }
-}
-</style>
+</section>
 {% endblock %}

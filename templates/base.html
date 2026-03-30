@@ -13,33 +13,53 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation Bar -->
     <nav class="navbar" id="navbar">
         <div class="container nav-inner">
-            <a class="brand navbar-logo" href="/">
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4L24 4C24 4 10 10 10 24C10 34 16 42 24 44C32 42 38 34 38 24C38 10 24 4 24 4Z' fill='white' stroke='white' stroke-width='2.5' stroke-linejoin='round'/%3E%3Cpath d='M24 10C24 10 16 14.5 16 23C16 29.5 19.5 35 24 37C28.5 35 32 29.5 32 23C32 14.5 24 10 24 10Z' fill='%236366f1' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M18 22L22 26L30 18' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" alt="SheSecure Shield Logo">
+            <a class="brand navbar-logo" href="{{ url_for('landing') }}">
+                <span class="navbar-logo-mark" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" role="img" focusable="false">
+                        <defs>
+                            <linearGradient id="navbarLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" />
+                                <stop offset="100%" stop-color="#dbe7ff" />
+                            </linearGradient>
+                            <linearGradient id="navbarInnerShield" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#7c83ff" />
+                                <stop offset="100%" stop-color="#4f46e5" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M24 4L36 9V21C36 31 30.8 39 24 43C17.2 39 12 31 12 21V9L24 4Z" fill="url(#navbarLogoGradient)"/>
+                        <path d="M24 8L32 11.5V21C32 28.1 28.5 34.1 24 37C19.5 34.1 16 28.1 16 21V11.5L24 8Z" fill="url(#navbarInnerShield)"/>
+                        <path d="M19 22.5L22.2 25.7L29 18.8" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </span>
                 <span class="navbar-logo-text">SheSecure</span>
             </a>
-            
+
             <div class="nav-links" id="nav-links">
-                <a href="/" class="nav-link">Home</a>
-                <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/counselling" class="nav-link">💚 Counselling</a>
-                <a href="/login" class="nav-link">Login</a>
-                <a href="/signup" class="nav-link">Sign Up</a>
-                
-                <!-- Theme Selector -->
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('predictor') }}" class="nav-link">Predictor</a>
+                <a href="{{ url_for('location') }}" class="nav-link">Location</a>
+                <a href="{{ url_for('helplines') }}" class="nav-link">Helplines</a>
+                <a href="{{ url_for('counselling') }}" class="nav-link">Counselling</a>
+                <a href="{{ url_for('logout') }}" class="nav-link nav-link-accent">Logout</a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('signup') }}" class="nav-link nav-link-accent">Sign Up</a>
+                {% endif %}
+
                 <div class="theme-selector" id="theme-selector">
-                    <button class="theme-btn" id="theme-btn" title="Switch Theme">🌙</button>
+                    <button class="theme-btn" id="theme-btn" title="Switch Theme">Theme</button>
                     <div class="theme-menu" id="theme-menu">
-                        <button class="theme-option" data-theme="light" title="Light Theme">☀️ Light</button>
-                        <button class="theme-option" data-theme="dark" title="Dark Theme">🌙 Dark</button>
-                        <button class="theme-option" data-theme="high-contrast" title="High Contrast">♿ Contrast</button>
+                        <button class="theme-option" data-theme="light" title="Light Theme">Light</button>
+                        <button class="theme-option" data-theme="dark" title="Dark Theme">Dark</button>
+                        <button class="theme-option" data-theme="high-contrast" title="High Contrast">Contrast</button>
                     </div>
                 </div>
             </div>
 
-            <button class="hamburger" id="hamburger">
+            <button class="hamburger" id="hamburger" aria-label="Open navigation">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -47,24 +67,21 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="page-container">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Floating Chatbot Button -->
-    <button class="floating-chatbot-btn" id="floating-chatbot-btn" title="Open Chat">
-        💬
-    </button>
+    {% if current_user.is_authenticated %}
+    <button class="floating-chatbot-btn" id="floating-chatbot-btn" title="Open Chat">Chat</button>
+    {% endif %}
 
-    <!-- Footer -->
     <footer class="site-footer">
         <div class="container">
             <p>&copy; 2026 SheSecure. Your Safety, Our Priority.</p>
             <div class="footer-links">
-                <a href="#privacy">Privacy</a>
-                <a href="#terms">Terms</a>
-                <a href="#contact">Contact</a>
+                <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}">Access</a>
+                <a href="{{ url_for('helplines') if current_user.is_authenticated else url_for('signup') }}">Support</a>
+                <a href="{{ url_for('counselling') if current_user.is_authenticated else url_for('login') }}">Care</a>
             </div>
         </div>
     </footer>

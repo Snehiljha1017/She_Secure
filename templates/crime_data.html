@@ -53,6 +53,65 @@
         </div>
     </div>
 
+    <div class="hotspot-section">
+        <div class="hotspot-header">
+            <h2>Delhi Police-Area Hotspot Dataset</h2>
+            <p>Merged from your uploaded <code>crime.csv</code> and kept alongside the original all-India dataset.</p>
+        </div>
+
+        <div class="hotspot-metrics">
+            <div class="hotspot-metric-card">
+                <span>Total areas mapped</span>
+                <strong>{{ hotspot_stats.total_areas|default(0) }}</strong>
+            </div>
+            <div class="hotspot-metric-card">
+                <span>Highest total crime area</span>
+                <strong>{{ hotspot_stats.highest_totalcrime_area|default('Not available') }}</strong>
+                <small>{{ hotspot_stats.highest_totalcrime_value|default(0) }} incidents</small>
+            </div>
+            <div class="hotspot-metric-card">
+                <span>Highest crime density</span>
+                <strong>{{ hotspot_stats.highest_density_area|default('Not available') }}</strong>
+                <small>{{ hotspot_stats.highest_density_value|default(0) }} crimes / area unit</small>
+            </div>
+        </div>
+
+        <div class="hotspot-table-shell">
+            <table class="hotspot-table">
+                <thead>
+                    <tr>
+                        <th>Police Area</th>
+                        <th>Total Crime</th>
+                        <th>Theft</th>
+                        <th>Robbery</th>
+                        <th>Rape</th>
+                        <th>Lat</th>
+                        <th>Long</th>
+                        <th>Crime Density</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in hotspot_rows %}
+                    <tr>
+                        <td>{{ row['nm_pol'] }}</td>
+                        <td>{{ row['totalcrime']|int }}</td>
+                        <td>{{ row['theft']|int }}</td>
+                        <td>{{ row['robbery']|int }}</td>
+                        <td>{{ row['rape']|int }}</td>
+                        <td>{{ '%.5f'|format(row['lat']) }}</td>
+                        <td>{{ '%.5f'|format(row['long']) }}</td>
+                        <td>{{ '%.2f'|format(row['crime/area']) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8">No Delhi hotspot data loaded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Interactive Charts Section -->
     <div class="charts-section">
         <div class="chart-row">
@@ -392,6 +451,78 @@
     font-size: 0.9rem;
     opacity: 0.8;
     font-weight: 500;
+}
+
+.hotspot-section {
+    background: white;
+    border-radius: 18px;
+    padding: 28px;
+    margin-bottom: 40px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border: 1px solid #e1e5e9;
+}
+
+.hotspot-header {
+    margin-bottom: 22px;
+}
+
+.hotspot-header h2 {
+    margin: 0 0 8px 0;
+    color: #1f2937;
+}
+
+.hotspot-header p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.hotspot-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.hotspot-metric-card {
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+    border: 1px solid #dbeafe;
+}
+
+.hotspot-metric-card span,
+.hotspot-metric-card small {
+    display: block;
+    color: #4b5563;
+}
+
+.hotspot-metric-card strong {
+    display: block;
+    margin: 8px 0 6px;
+    font-size: 1.2rem;
+    color: #111827;
+}
+
+.hotspot-table-shell {
+    overflow-x: auto;
+}
+
+.hotspot-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.hotspot-table th,
+.hotspot-table td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.hotspot-table th {
+    background: #f8fafc;
+    color: #374151;
+    font-weight: 700;
 }
 
 /* Charts Section */

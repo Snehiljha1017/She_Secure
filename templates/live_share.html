@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Live Safety Tracking - SheSecure</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .shell {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 32px 20px 48px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+        .eyebrow {
+            margin: 0 0 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 12px;
+            font-weight: 700;
+            color: #b91c1c;
+        }
+        h1 {
+            margin: 0 0 12px;
+            font-size: 32px;
+            line-height: 1.15;
+        }
+        p {
+            line-height: 1.6;
+        }
+        .meta {
+            display: grid;
+            gap: 12px;
+            margin: 24px 0;
+        }
+        .map-card {
+            margin-top: 18px;
+            padding: 18px;
+            border-radius: 18px;
+            background: #eff6ff;
+            border: 1px solid rgba(59, 130, 246, 0.16);
+        }
+        .map-card strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+        .map-card p {
+            margin: 0;
+            color: #475569;
+        }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 18px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="card">
+            <p class="eyebrow">Live safety tracking</p>
+            <h1>Current live location from SheSecure</h1>
+            <p>This page refreshes the latest shared location automatically every 15 seconds.</p>
+
+            <div class="meta">
+                <div class="meta-row">
+                    <span>Status</span>
+                    <strong id="share-status">Loading…</strong>
+                </div>
+                <div class="meta-row">
+                    <span>Latitude</span>
+                    <strong id="share-latitude">-</strong>
+                </div>
+                <div class="meta-row">
+                    <span>Longitude</span>
+                    <strong id="share-longitude">-</strong>
+                </div>
+                <div class="meta-row">
+                    <span>Updated at</span>
+                    <strong id="share-updated">-</strong>
+                </div>
+            </div>
+
+            <div class="map-card">
+                <strong>Latest shared location</strong>
+                <p id="map-summary">Waiting for live location…</p>
+            </div>
+
+            <div class="actions">
+                <a id="google-maps-link" class="btn btn-primary" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
+                <a id="refresh-link" class="btn btn-secondary" href="#">Refresh now</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const token = {{ token|tojson }};
+
+    async function refreshLiveShare() {
+        try {
+            const response = await fetch(`/api/live-share/${token}`);
+            const data = await response.json();
+
+            if (!response.ok || data.status !== 'success') {
+                throw new Error(data.message || 'Unable to load live location.');
+            }
+
+            const location = data.location || {};
+            const lat = location.lat ?? '-';
+            const lon = location.lon ?? '-';
+
+            document.getElementById('share-status').textContent = 'Live';
+            document.getElementById('share-latitude').textContent = lat;
+            document.getElementById('share-longitude').textContent = lon;
+            document.getElementById('share-updated').textContent = data.updated_at ? new Date(data.updated_at).toLocaleString() : '-';
+
+            if (lat !== '-' && lon !== '-') {
+                document.getElementById('google-maps-link').href = `https://www.google.com/maps?q=${lat},${lon}`;
+                document.getElementById('map-summary').textContent = `Live location is active at ${lat}, ${lon}. Tap Google Maps to open navigation.`;
+            }
+        } catch (error) {
+            document.getElementById('share-status').textContent = error.message;
+            document.getElementById('map-summary').textContent = 'Live location could not be loaded right now.';
+        }
+    }
+
+    document.getElementById('refresh-link').addEventListener('click', function(event) {
+        event.preventDefault();
+        refreshLiveShare();
+    });
+
+    refreshLiveShare();
+    setInterval(refreshLiveShare, 15000);
+    </script>
+</body>
+</html>

@@ -211,6 +211,15 @@ class OfflineSafetyMode {
             
             // Show confirmation
             this.showOfflineSOSConfirmation(contacts.length, location);
+
+            // Offer immediate call and message actions after SOS is queued.
+            if (typeof window.showEmergencyActionModal === 'function') {
+                window.showEmergencyActionModal({
+                    contacts: contacts,
+                    location: location,
+                    emergencyNumber: '112'
+                });
+            }
             
             // Try to process immediately if online
             if (this.isOnline) {
@@ -258,25 +267,16 @@ class OfflineSafetyMode {
         // For web apps, queue for server-side processing
         
         const message = `🚨 EMERGENCY ALERT from SheSecure App!\n\n` +
-                       `Location: https://maps.google.com/?q=${location.lat},${location.lon}\n` +
+                       `Live tracking link is being prepared.\n` +
                        `Time: ${new Date().toLocaleString()}\n` +
                        `Accuracy: ${location.accuracy}m\n\n` +
                        `This is an automated emergency alert. Please respond immediately.`;
         
-        // If online, send via server
-        if (this.isOnline) {
-            fetch('/emergency/sms', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    contacts: contacts,
-                    location: location,
-                    message: message,
-                    timestamp: new Date().toISOString()
-                })
-            }).then(response => response.json())
-              .then(data => console.log('SMS queued:', data))
-              .catch(error => console.error('SMS queue failed:', error));
+        // If online, send both the live location update and emergency alert immediately.
+        if (this.isOnline && typeof window.sendLocationAndEmergencyAlerts === 'function') {
+            window.sendLocationAndEmergencyAlerts(contacts, location)
+                .then(data => console.log('Emergency alert results:', data))
+                .catch(error => console.error('Emergency SMS failed:', error));
         }
         
         console.log('Emergency SMS prepared for:', contacts.length, 'contacts');

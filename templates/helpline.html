@@ -9,6 +9,24 @@
         <p>Quick access to resources and emergency support</p>
     </div>
 
+    <div class="emergency-actions-panel fade-in-up">
+        <div>
+            <h2>Emergency Actions</h2>
+            <p>Call emergency services or open a prepared alert message for your trusted contacts.</p>
+        </div>
+        <div class="emergency-actions-buttons">
+            <button type="button" class="btn btn-primary" data-emergency-action="call" data-emergency-number="112">
+                Call 112
+            </button>
+            <button type="button" class="btn btn-secondary" data-emergency-action="message" data-emergency-target="trusted-contacts">
+                Message Trusted Contacts
+            </button>
+            <button type="button" class="btn btn-secondary" data-emergency-action="panel" data-emergency-target="trusted-contacts" data-emergency-number="112">
+                Open Emergency Actions
+            </button>
+        </div>
+    </div>
+
     <!-- Emergency Helplines -->
     <div class="helplines-section fade-in-up">
         <h2>Emergency Helplines</h2>
@@ -44,6 +62,7 @@
         <form id="contact-form" class="contact-form" style="display: none; margin-top: 20px;">
             <input type="text" id="contact-name" placeholder="Contact Name" required>
             <input type="tel" id="contact-phone" placeholder="Phone Number" required>
+            <input type="text" id="contact-telegram" placeholder="Telegram Chat ID for direct alerts">
             <div class="form-buttons">
                 <button type="submit" class="btn btn-primary">Save</button>
                 <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
@@ -81,6 +100,36 @@
 .helplines-section,
 .contacts-section {
     margin-bottom: 60px;
+}
+
+.emergency-actions-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 24px;
+    margin-bottom: 36px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(244, 63, 94, 0.08));
+    border: 1px solid rgba(79, 70, 229, 0.18);
+    border-radius: 18px;
+}
+
+.emergency-actions-panel h2 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.emergency-actions-panel p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.emergency-actions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .helplines-section h2,
@@ -200,6 +249,7 @@
 
 .contact-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
@@ -221,7 +271,30 @@
     color: #d32f2f;
 }
 
+.btn-call {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.btn-message {
+    background: #ede7f6;
+    color: #5e35b1;
+}
+
 @media (max-width: 768px) {
+    .emergency-actions-panel {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .emergency-actions-buttons {
+        width: 100%;
+    }
+
+    .emergency-actions-buttons .btn {
+        width: 100%;
+    }
+
     .helplines-grid {
         grid-template-columns: 1fr;
     }
@@ -255,18 +328,28 @@ function renderContacts() {
             <div class="contact-info">
                 <h4>${contact.name}</h4>
                 <p>${contact.phone}</p>
+                <p>${contact.telegramChatId || contact.telegram_chat_id ? `Telegram: ${contact.telegramChatId || contact.telegram_chat_id}` : 'Telegram direct send not linked yet'}</p>
             </div>
             <div class="contact-actions">
+                <button class="btn-call" type="button" data-emergency-action="call" data-emergency-number="${contact.phone}">Call</button>
+                <button class="btn-message" type="button" data-emergency-action="message" data-emergency-contact="${contact.phone}">Message</button>
                 <button class="btn-edit" onclick="editContact(${index})">Edit</button>
                 <button class="btn-delete" onclick="deleteContact(${index})">Delete</button>
             </div>
         </div>
     `).join('');
+
+    if (typeof initEmergencyActionButtons === 'function') {
+        initEmergencyActionButtons();
+    }
 }
 
 function deleteContact(index) {
     contacts.splice(index, 1);
     localStorage.setItem('contacts', JSON.stringify(contacts));
+    if (typeof syncContactsForOfflineMode === 'function') {
+        syncContactsForOfflineMode();
+    }
     renderContacts();
 }
 
@@ -274,6 +357,7 @@ function editContact(index) {
     const contact = contacts[index];
     document.getElementById('contact-name').value = contact.name;
     document.getElementById('contact-phone').value = contact.phone;
+    document.getElementById('contact-telegram').value = contact.telegramChatId || contact.telegram_chat_id || '';
     document.getElementById('contact-form').style.display = 'flex';
     deleteContact(index);
 }
@@ -286,17 +370,23 @@ document.getElementById('cancel-btn').addEventListener('click', function() {
     document.getElementById('contact-form').style.display = 'none';
     document.getElementById('contact-name').value = '';
     document.getElementById('contact-phone').value = '';
+    document.getElementById('contact-telegram').value = '';
 });
 
 document.getElementById('contact-form').addEventListener('submit', function(e) {
     e.preventDefault();
     contacts.push({
         name: document.getElementById('contact-name').value,
-        phone: document.getElementById('contact-phone').value
+        phone: document.getElementById('contact-phone').value,
+        telegramChatId: document.getElementById('contact-telegram').value
     });
     localStorage.setItem('contacts', JSON.stringify(contacts));
+    if (typeof syncContactsForOfflineMode === 'function') {
+        syncContactsForOfflineMode();
+    }
     document.getElementById('contact-name').value = '';
     document.getElementById('contact-phone').value = '';
+    document.getElementById('contact-telegram').value = '';
     document.getElementById('contact-form').style.display = 'none';
     renderContacts();
 });

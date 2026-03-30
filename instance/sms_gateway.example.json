@@ -1,0 +1,5 @@
+{
+  "TWILIO_ACCOUNT_SID": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "TWILIO_AUTH_TOKEN": "your_twilio_auth_token",
+  "TWILIO_FROM_NUMBER": "+1234567890"
+}

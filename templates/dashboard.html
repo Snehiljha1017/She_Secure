@@ -2,565 +2,1819 @@
 
 {% block title %}Dashboard - SheSecure{% endblock %}
 
+{% block extra_css %}
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+>
+{% endblock %}
+
 {% block content %}
-<div class="dashboard-container">
-    <div class="dashboard-header fade-in">
-        <div class="container">
-            <div class="dashboard-logo-header">
-                <svg class="dashboard-logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                    <defs>
-                        <linearGradient id="dashboardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="48" height="48" fill="url(#dashboardGradient)" rx="8"/>
-                    <path d="M24 8C24 8 16 14 16 22C16 28.6 19.6 34 24 36.4C28.4 34 32 28.6 32 22C32 14 24 8 24 8Z" fill="white"/>
-                    <circle cx="24" cy="22" r="4" fill="#6366f1"/>
-                </svg>
-                <h1 class="dashboard-title">Safety Control Center</h1>
+<section class="dashboard-shell">
+    <div class="container">
+        <div class="dashboard-hero fade-in">
+            <div class="dashboard-copy">
+                <span class="eyebrow">Control center</span>
+                <h1>Move through the app with more clarity and less friction.</h1>
+                <p>
+                    Everything important is grouped here: quick safety actions, emergency tools,
+                    live data views, and the features your users will actually open first.
+                </p>
+                <div class="dashboard-actions">
+                    <a href="{{ url_for('predictor') }}" class="btn btn-primary">Run Safety Check</a>
+                    <a href="{{ url_for('crime_data') }}" class="btn btn-secondary">View Crime Analytics</a>
+                </div>
             </div>
-            <p class="dashboard-subtitle">Your personalized safety hub</p>
+
+            <div class="status-panel fade-in-up">
+                <div class="status-panel-header">
+                    <span class="auth-badge">Live Summary</span>
+                    <strong>Today</strong>
+                </div>
+                <div class="status-metric">
+                    <span>Trusted contacts</span>
+                    <strong id="contacts-count">0</strong>
+                </div>
+                <div class="status-metric">
+                    <span>Queued emergency alerts</span>
+                    <strong id="queue-count">0</strong>
+                </div>
+                <div class="status-metric">
+                    <span>Offline safety mode</span>
+                    <strong>Ready</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-layout">
+            <section class="command-card command-card-sos slide-in-up">
+                <div>
+                    <span class="eyebrow">Emergency access</span>
+                    <h2>Trigger SOS instantly</h2>
+                    <p>Use SOS for the full safety flow, or jump straight to emergency call and message actions.</p>
+                </div>
+                <button class="btn-sos" id="sos-btn">
+                    <span class="sos-pulse"></span>
+                    SOS
+                </button>
+                <div class="dashboard-actions">
+                    <button type="button" class="btn btn-primary" data-emergency-action="call" data-emergency-number="112">
+                        Call 112
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-emergency-action="message" data-emergency-target="trusted-contacts">
+                        Message Contacts
+                    </button>
+                </div>
+            </section>
+
+            <section class="command-card slide-in-up">
+                <div class="command-card-header">
+                    <span class="eyebrow">Trusted contacts</span>
+                    <h2>Add contacts and send your live location fast</h2>
+                </div>
+                <p class="dashboard-contact-copy">
+                    Save the people you trust most here, then send them your current location or an emergency alert
+                    message without leaving the dashboard.
+                </p>
+
+                <form id="dashboard-contact-form" class="dashboard-contact-form">
+                    <input type="text" id="dashboard-contact-name" placeholder="Contact name" required>
+                    <input type="tel" id="dashboard-contact-phone" placeholder="Phone number" required>
+                    <input type="text" id="dashboard-contact-telegram" placeholder="Telegram chat ID for direct send">
+                    <button type="submit" class="btn btn-primary">Add Trusted Contact</button>
+                </form>
+
+                <div class="dashboard-telegram-panel">
+                    <div class="dashboard-telegram-head">
+                        <div>
+                            <strong>Telegram Setup</strong>
+                            <p>Ask a trusted contact to open your bot and tap <code>/start</code>, then fetch their chat ID here.</p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="refresh-telegram-chats-btn">
+                            Find Telegram Contacts
+                        </button>
+                    </div>
+                    <div id="telegram-discovered-list" class="telegram-discovered-list"></div>
+                </div>
+
+                <div class="dashboard-contact-actions">
+                    <button type="button" class="btn btn-secondary" id="share-live-location-btn">
+                        Share Live Location
+                    </button>
+                    <button type="button" class="btn btn-primary" id="send-emergency-message-btn">
+                        Send Emergency Message
+                    </button>
+                    <a href="{{ url_for('location') }}" class="btn btn-secondary">
+                        Open Live Map
+                    </a>
+                </div>
+
+                <div class="dashboard-repeat-panel">
+                    <div class="dashboard-repeat-grid">
+                        <label class="dashboard-repeat-field">
+                            <span>Repeat mode</span>
+                            <select id="repeat-share-mode">
+                                <option value="location">Live location only</option>
+                                <option value="emergency">Emergency only</option>
+                                <option value="both">Location + emergency</option>
+                            </select>
+                        </label>
+                        <label class="dashboard-repeat-field">
+                            <span>Interval</span>
+                            <select id="repeat-share-interval">
+                                <option value="30">Every 30 seconds</option>
+                                <option value="60" selected>Every 60 seconds</option>
+                                <option value="120">Every 2 minutes</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="dashboard-contact-actions">
+                        <button type="button" class="btn btn-primary" id="start-repeat-sharing-btn">
+                            Start Frequent Sharing
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="stop-repeat-sharing-btn" disabled>
+                            Stop Frequent Sharing
+                        </button>
+                    </div>
+                    <p id="repeat-sharing-status" class="dashboard-repeat-status">
+                        Frequent sharing is off.
+                    </p>
+                </div>
+
+                <p id="dashboard-contact-feedback" class="dashboard-contact-feedback" aria-live="polite"></p>
+                <div id="dashboard-contact-list" class="dashboard-contact-list"></div>
+            </section>
+
+            <section class="command-card route-command-card slide-in-up">
+                <div class="command-card-header">
+                    <span class="eyebrow">Safer travel</span>
+                    <h2>Plan a lower-risk route from point A to point B</h2>
+                </div>
+                <p class="route-planner-copy">
+                    This planner uses your Delhi hotspot dataset to steer away from higher-risk police areas for women.
+                    It is a hotspot-aware travel suggestion, not a lane-by-lane Google Maps replacement.
+                </p>
+
+                <div class="route-form-grid">
+                    <label class="route-field">
+                        <span>Start area (optional)</span>
+                        <input type="text" id="route-start-area" list="route-area-options" placeholder="Search a Delhi police area">
+                    </label>
+                    <div class="route-inline-action">
+                        <span>Quick fill</span>
+                        <button type="button" class="btn btn-secondary" id="route-use-current-location-btn">
+                            Use My Current Location
+                        </button>
+                    </div>
+                    <label class="route-field">
+                        <span>Start latitude</span>
+                        <input type="number" step="any" id="route-start-lat" placeholder="28.6139">
+                    </label>
+                    <label class="route-field">
+                        <span>Start longitude</span>
+                        <input type="number" step="any" id="route-start-lon" placeholder="77.2090">
+                    </label>
+                    <label class="route-field">
+                        <span>Destination area (optional)</span>
+                        <input type="text" id="route-end-area" list="route-area-options" placeholder="Search a Delhi police area">
+                    </label>
+                    <div class="route-inline-action route-inline-copy">
+                        <span>Planner</span>
+                        <p>Fill destination by area or exact coordinates, then generate the safer path.</p>
+                    </div>
+                    <label class="route-field">
+                        <span>Destination latitude</span>
+                        <input type="number" step="any" id="route-end-lat" placeholder="28.5562">
+                    </label>
+                    <label class="route-field">
+                        <span>Destination longitude</span>
+                        <input type="number" step="any" id="route-end-lon" placeholder="77.1000">
+                    </label>
+                </div>
+
+                <datalist id="route-area-options">
+                    {% for hotspot in route_hotspots %}
+                    <option value="{{ hotspot.name }}">{{ hotspot.name }}</option>
+                    {% endfor %}
+                </datalist>
+
+                <div class="dashboard-contact-actions route-action-row">
+                    <button type="button" class="btn btn-primary" id="route-plan-btn">
+                        Suggest Safer Route
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="route-swap-btn">
+                        Swap Points
+                    </button>
+                </div>
+
+                <p id="route-planner-feedback" class="route-feedback" aria-live="polite">
+                    Pick a start point and destination to compare the direct path against lower-risk alternatives.
+                </p>
+
+                <div id="route-results-shell" class="route-results-shell" hidden>
+                    <div class="route-summary-grid" id="route-summary-grid"></div>
+
+                    <div class="route-visual-card">
+                        <div class="route-visual-header">
+                            <div>
+                                <strong>Hotspot-aware route preview</strong>
+                                <p>Red dotted line is the direct path. The teal line is the recommended safer corridor.</p>
+                            </div>
+                            <div class="route-legend">
+                                <span><i class="route-legend-dot route-legend-hotspot"></i> High-risk hotspot</span>
+                                <span><i class="route-legend-dot route-legend-direct"></i> Direct route</span>
+                                <span><i class="route-legend-dot route-legend-safe"></i> Safer route</span>
+                            </div>
+                        </div>
+                        <div id="route-map" class="route-map"></div>
+                    </div>
+
+                    <div class="route-detail-grid">
+                    <div class="route-detail-card">
+                        <h3>Recommendation</h3>
+                        <p id="route-summary-text" class="route-summary-text"></p>
+                        <div id="route-map-actions" class="route-map-actions"></div>
+                        <div id="route-alternatives" class="route-alternatives"></div>
+                    </div>
+                        <div class="route-detail-card">
+                            <h3>Waypoints</h3>
+                            <div id="route-waypoints" class="route-waypoints"></div>
+                        </div>
+                    </div>
+
+                    <div class="route-detail-card">
+                        <h3>Hotspots this route avoids</h3>
+                        <div id="route-avoided-hotspots" class="route-avoided-hotspots"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="command-card slide-in-up">
+                <div class="command-card-header">
+                    <span class="eyebrow">Safety tools</span>
+                    <h2>Choose your next action</h2>
+                </div>
+                <div class="features-grid">
+                    <a href="{{ url_for('predictor') }}" class="feature-card">
+                        <div class="feature-icon">01</div>
+                        <h3>Safety Predictor</h3>
+                        <p>Run a quick risk estimate with a cleaner form flow.</p>
+                        <span class="feature-arrow">Open</span>
+                    </a>
+                    <a href="{{ url_for('location') }}" class="feature-card">
+                        <div class="feature-icon">02</div>
+                        <h3>Location Sharing</h3>
+                        <p>Share your current coordinates with trusted contacts.</p>
+                        <span class="feature-arrow">Open</span>
+                    </a>
+                    <a href="{{ url_for('helplines') }}" class="feature-card">
+                        <div class="feature-icon">03</div>
+                        <h3>Emergency Helplines</h3>
+                        <p>Get to official support numbers with less searching.</p>
+                        <span class="feature-arrow">Open</span>
+                    </a>
+                    <a href="{{ url_for('chatbot') }}" class="feature-card">
+                        <div class="feature-icon">04</div>
+                        <h3>Smart Chatbot</h3>
+                        <p>Ask for quick safety guidance and next-step help.</p>
+                        <span class="feature-arrow">Open</span>
+                    </a>
+                    <a href="{{ url_for('counselling') }}" class="feature-card">
+                        <div class="feature-icon">05</div>
+                        <h3>Counselling</h3>
+                        <p>Reach calmer support experiences for care and recovery.</p>
+                        <span class="feature-arrow">Open</span>
+                    </a>
+                    <a href="{{ url_for('crime_data') }}" class="feature-card">
+                        <div class="feature-icon">06</div>
+                        <h3>Crime Analytics</h3>
+                        <p>Explore the dataset-driven side of the project.</p>
+                        <span class="feature-arrow">Open</span>
+                    </a>
+                </div>
+            </section>
         </div>
     </div>
-
-    <div class="container dashboard-content">
-        <!-- Quick Stats -->
-        <div class="quick-stats">
-            <div class="stat-card slide-in-left" style="animation-delay: 0.1s;">
-                <div class="stat-icon">📞</div>
-                <div class="stat-info">
-                    <div class="stat-label">Trusted Contacts</div>
-                    <div class="stat-value" id="contacts-count">0</div>
-                </div>
-            </div>
-
-            <div class="stat-card slide-in-left" style="animation-delay: 0.2s;">
-                <div class="stat-icon">🚨</div>
-                <div class="stat-info">
-                    <div class="stat-label">Emergency Ready</div>
-                    <div class="stat-value">✓</div>
-                </div>
-            </div>
-
-            <div class="stat-card slide-in-left" style="animation-delay: 0.3s;">
-                <div class="stat-icon">📍</div>
-                <div class="stat-info">
-                    <div class="stat-label">Location Status</div>
-                    <div class="stat-value">Ready</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SOS Button -->
-        <div class="sos-section slide-in-up" style="animation-delay: 0.4s;">
-            <button class="btn-sos" id="sos-btn">
-                <span class="sos-pulse"></span>
-                SOS
-            </button>
-        </div>
-
-        <!-- Features Grid -->
-        <div class="features-grid">
-            <a href="/predictor" class="feature-card slide-in-left" style="animation-delay: 0.1s;">
-                <div class="feature-icon">🎯</div>
-                <h3>Safety Predictor</h3>
-                <p>Analyze real-time safety risks</p>
-                <span class="feature-arrow">→</span>
-            </a>
-
-            <a href="/location" class="feature-card slide-in-left" style="animation-delay: 0.2s;">
-                <div class="feature-icon">📍</div>
-                <h3>Location Sharing</h3>
-                <p>Share location with contacts</p>
-                <span class="feature-arrow">→</span>
-            </a>
-
-            <a href="/helplines" class="feature-card slide-in-left" style="animation-delay: 0.3s;">
-                <div class="feature-icon">📞</div>
-                <h3>Emergency Helplines</h3>
-                <p>Access emergency resources</p>
-                <span class="feature-arrow">→</span>
-            </a>
-
-            <a href="/chatbot" class="feature-card slide-in-left" style="animation-delay: 0.4s;">
-                <div class="feature-icon">💬</div>
-                <h3>Smart Chatbot</h3>
-                <p>Get personalized safety tips</p>
-                <span class="feature-arrow">→</span>
-            </a>
-
-            <a href="/counselling" class="feature-card slide-in-left" style="animation-delay: 0.5s;">
-                <div class="feature-icon">💚</div>
-                <h3>Counselling & Support</h3>
-                <p>Mental health & legal guidance</p>
-                <span class="feature-arrow">→</span>
-            </a>
-
-            <a href="/crime-data" class="feature-card slide-in-left" style="animation-delay: 0.6s;">
-                <div class="feature-icon">📊</div>
-                <h3>Crime Analytics</h3>
-                <p>Explore real crime data & statistics</p>
-                <span class="feature-arrow">→</span>
-            </a>
-        </div>
-
-        <!-- Offline Safety Mode Info -->
-        <div class="offline-safety-info slide-in-up" style="animation-delay: 0.6s;">
-            <div class="info-header">
-                <span class="info-icon">🔴</span>
-                <h3>Offline Safety Mode Active</h3>
-            </div>
-            <p>Emergency features work even without internet! SOS triggers alarm, records evidence, and auto-sends alerts when connection is restored.</p>
-            <div class="info-features">
-                <span class="info-badge">📡 Always Available</span>
-                <span class="info-badge">🔊 Loud Alarm</span>
-                <span class="info-badge">📹 Evidence Recording</span>
-                <span class="info-badge">📱 Auto SMS Queue</span>
-            </div>
-            <div class="offline-controls">
-                <button class="test-offline-btn" id="test-offline-btn">
-                    🧪 Test Offline Mode
-                </button>
-                <button class="view-queue-btn" id="view-queue-btn">
-                    📋 View Queue (<span id="queue-count">0</span>)
-                </button>
-                <button class="reenable-offline-btn" id="reenable-offline-btn" style="display: none;" title="Re-enable the Safety Shield">
-                    🛡️ Re-enable Shield
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
 <style>
-.dashboard-container {
-    min-height: calc(100vh - 200px);
-}
-
-.offline-safety-info {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 32px;
-    border-radius: 16px;
-    margin-top: 40px;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-}
-
-.info-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.info-icon {
-    font-size: 28px;
-}
-
-.offline-safety-info h3 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-}
-
-.offline-safety-info p {
-    margin: 0 0 16px 0;
-    opacity: 0.95;
+.dashboard-contact-copy {
+    margin: 0 0 18px;
+    color: var(--text-secondary);
     line-height: 1.6;
 }
 
-.info-features {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-}
-
-.info-badge {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 8px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    backdrop-filter: blur(10px);
-}
-
-.offline-controls {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 16px;
-}
-
-.test-offline-btn,
-.view-queue-btn {
-    background: rgba(255, 255, 255, 0.95);
-    color: #667eea;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.test-offline-btn:hover,
-.view-queue-btn:hover {
-    background: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.reenable-offline-btn {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.reenable-offline-btn:hover {
-    background: linear-gradient(135deg, #0f8d74 0%, #2dd97b 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
-}
-
-.dashboard-header {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-    color: white;
-    padding: 60px 0;
-    text-align: center;
-}
-
-.dashboard-logo-header {
-    display: inline-flex;
-    align-items: center;
+.dashboard-contact-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
     gap: 12px;
     margin-bottom: 16px;
 }
 
-.dashboard-logo-icon {
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-}
-
-.dashboard-title {
-    font-size: 36px;
-    font-weight: 700;
-    margin: 0;
-}
-
-.dashboard-subtitle {
-    font-size: 16px;
-    opacity: 0.95;
-    margin: 0;
-}
-
-.dashboard-content {
-    padding: 60px 0;
-}
-
-.quick-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
-    margin-bottom: 60px;
-}
-
-.stat-card {
-    background: var(--card-bg);
+.dashboard-contact-form input {
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.95);
     color: var(--text-primary);
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px var(--card-shadow);
+}
+
+.dashboard-contact-actions {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: all 0.3s ease;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px var(--card-shadow);
+.dashboard-contact-feedback {
+    min-height: 24px;
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
 }
 
-.stat-icon {
-    font-size: 32px;
+.dashboard-contact-feedback.success {
+    color: #188038;
 }
 
-.stat-info {
-    display: flex;
-    flex-direction: column;
+.dashboard-contact-feedback.error {
+    color: #c5221f;
 }
 
-.stat-label {
-    font-size: 12px;
-    color: var(--stat-label-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--accent);
-}
-
-.sos-section {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 60px;
-}
-
-.btn-sos {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--button-primary) 0%, var(--accent-2) 100%);
-    border: none;
-    color: white;
-    font-size: 24px;
-    font-weight: 700;
-    cursor: pointer;
-    position: relative;
-    box-shadow: 0 8px 24px rgba(255, 64, 129, 0.3);
-    transition: all 0.3s ease;
-}
-
-body.theme-dark .btn-sos {
-    box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4);
-}
-
-body.theme-high-contrast .btn-sos {
-    background: var(--button-primary);
-    border: 3px solid var(--text-primary);
-}
-
-.btn-sos:hover {
-    transform: scale(1.05);
-    box-shadow: 0 12px 32px rgba(255, 64, 129, 0.4);
-}
-
-.sos-pulse {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    top: 0;
-    left: 0;
-    animation: pulse-ring 1.5s ease-out infinite;
-}
-
-@keyframes pulse-ring {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.3);
-        opacity: 0;
-    }
-}
-
-.features-grid {
+.dashboard-contact-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
-}
-
-.feature-card {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    padding: 32px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px var(--card-shadow);
-    text-decoration: none;
-    transition: all 0.3s ease;
-    position: relative;
-    display: flex;
-    flex-direction: column;
     gap: 12px;
 }
 
-.feature-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 32px var(--card-shadow);
+.dashboard-telegram-panel {
+    margin-bottom: 16px;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(239, 246, 255, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.14);
 }
 
-.feature-icon {
-    font-size: 40px;
+.dashboard-telegram-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 12px;
 }
 
-.feature-card h3 {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--accent);
+.dashboard-telegram-head strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.dashboard-telegram-head p {
     margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
 }
 
-.feature-card p {
+.telegram-discovered-list {
+    display: grid;
+    gap: 10px;
+}
+
+.telegram-discovered-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.telegram-discovered-item p {
+    margin: 2px 0 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.telegram-discovered-empty {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.dashboard-repeat-panel {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 18px;
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-repeat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.dashboard-repeat-field {
+    display: grid;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.dashboard-repeat-field select {
+    min-height: 46px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #ffffff;
+    color: var(--text-primary);
+}
+
+.dashboard-repeat-status {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.dashboard-contact-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    background: rgba(248, 250, 252, 0.95);
+}
+
+.dashboard-contact-meta h3 {
+    margin: 0 0 4px;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.dashboard-contact-meta p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.dashboard-contact-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dashboard-contact-item-actions button {
+    min-width: 88px;
+}
+
+.dashboard-contact-empty {
+    margin: 0;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(248, 250, 252, 0.9);
+    color: var(--text-secondary);
+}
+
+.route-command-card {
+    gap: 18px;
+}
+
+.route-planner-copy {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.route-form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.route-field,
+.route-inline-action {
+    display: grid;
+    gap: 8px;
+}
+
+.route-field span,
+.route-inline-action span {
     font-size: 14px;
     color: var(--text-secondary);
+}
+
+.route-field input {
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text-primary);
+}
+
+.route-inline-action {
+    align-content: end;
+    padding: 16px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.95), rgba(240, 249, 255, 0.95));
+    border: 1px solid rgba(16, 185, 129, 0.12);
+}
+
+.route-inline-action .btn {
+    width: 100%;
+}
+
+.route-inline-copy p {
     margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-size: 14px;
 }
 
-.feature-arrow {
-    color: var(--accent-2);
-    font-weight: 700;
-    margin-top: auto;
+.route-action-row {
+    margin-bottom: 0;
 }
 
-@media (max-width: 768px) {
-    .dashboard-header {
-        padding: 40px 0;
+.route-feedback {
+    min-height: 24px;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.route-feedback.success {
+    color: #188038;
+}
+
+.route-feedback.error {
+    color: #c5221f;
+}
+
+.route-results-shell {
+    display: grid;
+    gap: 16px;
+}
+
+.route-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.route-summary-card,
+.route-detail-card,
+.route-visual-card {
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(248, 250, 252, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.route-summary-card span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.route-summary-card strong {
+    display: block;
+    font-size: 24px;
+    color: var(--text-primary);
+}
+
+.route-summary-card small {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.route-visual-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.route-visual-header p {
+    margin: 6px 0 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.route-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.route-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.route-legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+}
+
+.route-legend-hotspot {
+    background: #ef4444;
+}
+
+.route-legend-direct {
+    background: #f97316;
+}
+
+.route-legend-safe {
+    background: #0f766e;
+}
+
+.route-map {
+    min-height: 420px;
+    border-radius: 18px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 38%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.18), transparent 34%),
+        linear-gradient(135deg, #f8fafc, #eef2ff);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.route-map svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.route-map .leaflet-control-zoom,
+.route-map .leaflet-control-attribution {
+    border: 0;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+}
+
+.route-map .leaflet-popup-content-wrapper {
+    border-radius: 14px;
+}
+
+.route-map .leaflet-popup-content {
+    margin: 12px 14px;
+    line-height: 1.5;
+}
+
+.route-map .leaflet-control-attribution {
+    font-size: 11px;
+}
+
+.route-map .route-map-pin {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12);
+}
+
+.route-map .route-map-pin.start {
+    background: #0f766e;
+}
+
+.route-map .route-map-pin.end {
+    background: #1d4ed8;
+}
+
+.route-map .route-map-pin.waypoint {
+    background: #f59e0b;
+}
+
+.route-map-empty {
+    display: grid;
+    place-items: center;
+    min-height: 360px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 24px;
+}
+
+.route-detail-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 16px;
+}
+
+.route-detail-card h3 {
+    margin: 0 0 12px;
+    color: var(--text-primary);
+}
+
+.route-summary-text {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.route-alternatives,
+.route-waypoints,
+.route-avoided-hotspots {
+    display: grid;
+    gap: 10px;
+}
+
+.route-map-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.route-chip,
+.route-waypoint-item,
+.route-hotspot-item {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.route-chip strong,
+.route-waypoint-item strong,
+.route-hotspot-item strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.route-chip p,
+.route-waypoint-item p,
+.route-hotspot-item p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    .dashboard-contact-form {
+        grid-template-columns: 1fr;
     }
 
-    .dashboard-title {
-        font-size: 28px;
+    .dashboard-repeat-grid {
+        grid-template-columns: 1fr;
     }
 
-    .btn-sos {
-        width: 100px;
-        height: 100px;
-        font-size: 20px;
+    .route-form-grid,
+    .route-summary-grid,
+    .route-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-telegram-head,
+    .telegram-discovered-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-contact-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .route-visual-header {
+        flex-direction: column;
+    }
+
+    .dashboard-contact-item-actions {
+        width: 100%;
+    }
+
+    .dashboard-contact-item-actions button,
+    .dashboard-contact-actions .btn,
+    .route-action-row .btn {
+        width: 100%;
     }
 }
 </style>
 
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+></script>
 <script>
+let dashboardRepeatTimer = null;
+let dashboardRepeatMode = null;
+const routeHotspots = {{ route_hotspots|default([])|tojson }};
+const routeHotspotLookup = new Map(
+    routeHotspots.map(hotspot => [String(hotspot.name || '').trim().toUpperCase(), hotspot])
+);
+let routeMapState = {
+    map: null,
+    layers: [],
+    tileLayer: null
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    const contactsCount = JSON.parse(localStorage.getItem('contacts') || '[]').length;
-    document.getElementById('contacts-count').textContent = contactsCount;
-
-    // Initialize queue count
+    initializeDashboardContacts();
+    initializeSaferRoutePlanner();
+    refreshDashboardContactCount();
     updateQueueCount();
-
-    // Test offline mode button
-    document.getElementById('test-offline-btn').addEventListener('click', function() {
-        if (typeof offlineSafety !== 'undefined' && offlineSafety) {
-            // Simulate offline mode
-            const wasOnline = navigator.onLine;
-            offlineSafety.isOnline = false;
-            offlineSafety.updateOfflineIndicator(true);
-            offlineSafety.showNotification('🧪 Test Mode', 'Offline mode activated for testing. Trigger SOS to test!', 'info', 8000);
-            
-            // Automatically restore after 20 seconds
-            setTimeout(() => {
-                if (!navigator.onLine) {
-                    offlineSafety.isOnline = navigator.onLine;
-                    offlineSafety.updateOfflineIndicator(!navigator.onLine);
-                }
-            }, 20000);
-        } else {
-            alert('Offline Safety Mode is loading... Please wait a moment and try again.');
-        }
-    });
-
-    // View queue button
-    document.getElementById('view-queue-btn').addEventListener('click', function() {
-        viewQueueStatus();
-    });
-
-    // Re-enable offline safety button
-    document.getElementById('reenable-offline-btn').addEventListener('click', function() {
-        if (typeof offlineSafety !== 'undefined' && offlineSafety.reEnableOfflineMode) {
-            offlineSafety.reEnableOfflineMode();
-            // Update button visibility
-            updateOfflineModeButtons();
-        }
-    });
-
-    // Update queue count every 5 seconds
     setInterval(updateQueueCount, 5000);
-    
-    // Check button visibility on page load and periodically
-    updateOfflineModeButtons();
-    setInterval(updateOfflineModeButtons, 2000);
 });
 
-function updateOfflineModeButtons() {
-    const indicator = document.getElementById('offline-indicator');
-    const testBtn = document.getElementById('test-offline-btn');
-    const reenableBtn = document.getElementById('reenable-offline-btn');
-    
-    if (!testBtn || !reenableBtn) return;
-    
-    const isIndicatorVisible = indicator && indicator.style.display !== 'none';
-    
-    // Show test button only when indicator is visible
-    testBtn.style.display = isIndicatorVisible ? 'flex' : 'none';
-    // Show re-enable button only when indicator is hidden
-    reenableBtn.style.display = isIndicatorVisible ? 'none' : 'flex';
+function getDashboardContacts() {
+    if (typeof loadContactsList === 'function') {
+        return loadContactsList();
+    }
+
+    return JSON.parse(localStorage.getItem('contacts') || '[]');
+}
+
+function saveDashboardContacts(contacts) {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+    if (typeof syncContactsForOfflineMode === 'function') {
+        syncContactsForOfflineMode();
+    }
+    refreshDashboardContactCount();
+}
+
+function refreshDashboardContactCount() {
+    const contactsNode = document.getElementById('contacts-count');
+    if (contactsNode) {
+        contactsNode.textContent = getDashboardContacts().length;
+    }
+}
+
+function showDashboardContactFeedback(message, type) {
+    const feedbackNode = document.getElementById('dashboard-contact-feedback');
+    if (!feedbackNode) {
+        return;
+    }
+
+    feedbackNode.textContent = message;
+    feedbackNode.className = `dashboard-contact-feedback ${type || ''}`.trim();
+}
+
+function buildLiveLocationMessage(location) {
+    if (typeof window.buildLiveLocationMessage === 'function') {
+        return window.buildLiveLocationMessage(location);
+    }
+
+    return 'Live location update from SheSecure.\nLive tracking link is being prepared.';
+}
+
+function renderDashboardContacts() {
+    const contacts = getDashboardContacts();
+    const listNode = document.getElementById('dashboard-contact-list');
+    const shareButton = document.getElementById('share-live-location-btn');
+    const emergencyButton = document.getElementById('send-emergency-message-btn');
+
+    if (!listNode) {
+        return;
+    }
+
+    if (shareButton) {
+        shareButton.disabled = contacts.length === 0;
+    }
+
+    if (emergencyButton) {
+        emergencyButton.disabled = contacts.length === 0;
+    }
+
+    if (contacts.length === 0) {
+        listNode.innerHTML = `
+            <p class="dashboard-contact-empty">
+                No trusted contacts added yet. Add at least one contact to share your live location or emergency message.
+            </p>
+        `;
+        return;
+    }
+
+    listNode.innerHTML = contacts.map((contact, index) => `
+        <article class="dashboard-contact-item">
+            <div class="dashboard-contact-meta">
+                <h3>${contact.name}</h3>
+                <p>${contact.phone}</p>
+                <p>${contact.telegramChatId || contact.telegram_chat_id ? `Telegram: ${contact.telegramChatId || contact.telegram_chat_id}` : 'Telegram direct send not linked yet'}</p>
+            </div>
+            <div class="dashboard-contact-item-actions">
+                <button type="button" class="btn btn-secondary" data-dashboard-contact-action="location" data-dashboard-contact-index="${index}">
+                    Location
+                </button>
+                <button type="button" class="btn btn-primary" data-dashboard-contact-action="emergency" data-dashboard-contact-index="${index}">
+                    Emergency
+                </button>
+                <button type="button" class="btn btn-secondary" data-dashboard-contact-action="remove" data-dashboard-contact-index="${index}">
+                    Remove
+                </button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderDiscoveredTelegramChats(chats) {
+    const listNode = document.getElementById('telegram-discovered-list');
+    if (!listNode) {
+        return;
+    }
+
+    if (!chats || chats.length === 0) {
+        listNode.innerHTML = `
+            <p class="telegram-discovered-empty">
+                No Telegram chats found yet. Ask the trusted contact to open your bot and tap <code>/start</code>, then click "Find Telegram Contacts".
+            </p>
+        `;
+        return;
+    }
+
+    listNode.innerHTML = chats.map(chat => `
+        <div class="telegram-discovered-item">
+            <div>
+                <strong>${chat.name}</strong>
+                <p>Chat ID: ${chat.chat_id}${chat.username ? ` | @${chat.username}` : ''}</p>
+            </div>
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-telegram-chat-id="${chat.chat_id}"
+                data-telegram-chat-name="${chat.name}"
+            >
+                Use This ID
+            </button>
+        </div>
+    `).join('');
+}
+
+async function refreshTelegramDiscoveredChats() {
+    const button = document.getElementById('refresh-telegram-chats-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Checking...';
+    }
+
+    try {
+        const response = await fetch('/api/telegram/discovered-chats');
+        const data = await response.json();
+        if (!response.ok || data.status !== 'success') {
+            throw new Error(data.message || 'Unable to load Telegram contacts.');
+        }
+
+        renderDiscoveredTelegramChats(data.contacts || []);
+        showDashboardContactFeedback('Telegram contacts refreshed. Pick one to fill the chat ID field.', 'success');
+    } catch (error) {
+        renderDiscoveredTelegramChats([]);
+        showDashboardContactFeedback(error.message || 'Unable to load Telegram contacts.', 'error');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Find Telegram Contacts';
+        }
+    }
+}
+
+async function shareDashboardLocation(contacts) {
+    if (!contacts.length) {
+        showDashboardContactFeedback('Add a trusted contact first.', 'error');
+        return;
+    }
+
+    try {
+        const liveShare = await ensureLiveShareSession();
+        const location = liveShare.location;
+        const telegramLive = await ensureTelegramLiveShareSession(
+            contacts,
+            location,
+            buildLiveLocationMessage(location, liveShare.shareUrl)
+        );
+
+        if (telegramLive.mode === 'telegram') {
+            showDashboardContactFeedback('Direct live location sharing started on Telegram.', 'success');
+            return;
+        }
+
+        const result = await sendTrustedContactAlert({
+            contacts,
+            message: buildLiveLocationMessage(location, liveShare.shareUrl),
+            location,
+            mode: 'location'
+        });
+        showDashboardContactFeedback(result.message || 'Live tracking link shared.', 'success');
+    } catch (error) {
+        console.error('Unable to share live location:', error);
+        showDashboardContactFeedback(error.message || 'Location access is needed to share your live location.', 'error');
+    }
+}
+
+async function sendDashboardEmergencyMessage(contacts) {
+    if (!contacts.length) {
+        showDashboardContactFeedback('Add a trusted contact first.', 'error');
+        return;
+    }
+
+    try {
+        const result = await sendLocationAndEmergencyAlerts(contacts);
+        const message = result?.emergencyResult?.message || 'Emergency alert and live location triggered.';
+        showDashboardContactFeedback(message, 'success');
+    } catch (error) {
+        console.error('Unable to prepare emergency message:', error);
+        showDashboardContactFeedback(error.message || 'Location access is needed to prepare the emergency message.', 'error');
+    }
+}
+
+function updateRepeatSharingStatus(message, isRunning = false) {
+    const statusNode = document.getElementById('repeat-sharing-status');
+    const startButton = document.getElementById('start-repeat-sharing-btn');
+    const stopButton = document.getElementById('stop-repeat-sharing-btn');
+
+    if (statusNode) {
+        statusNode.textContent = message;
+    }
+
+    if (startButton) {
+        startButton.disabled = isRunning;
+    }
+
+    if (stopButton) {
+        stopButton.disabled = !isRunning;
+    }
+}
+
+async function runRepeatSharing(mode, contacts) {
+    if (!contacts.length) {
+        showDashboardContactFeedback('Add a trusted contact first.', 'error');
+        stopRepeatSharing();
+        return;
+    }
+
+    if (mode === 'location') {
+        await shareDashboardLocation(contacts);
+        return;
+    }
+
+    if (mode === 'emergency') {
+        await sendDashboardEmergencyMessage(contacts);
+        return;
+    }
+
+    if (mode === 'both') {
+        await shareDashboardLocation(contacts);
+        await sendDashboardEmergencyMessage(contacts);
+    }
+}
+
+async function startRepeatSharing() {
+    const contacts = getDashboardContacts();
+    const modeSelect = document.getElementById('repeat-share-mode');
+    const intervalSelect = document.getElementById('repeat-share-interval');
+
+    if (!contacts.length) {
+        showDashboardContactFeedback('Add a trusted contact first.', 'error');
+        return;
+    }
+
+    const mode = modeSelect ? modeSelect.value : 'location';
+    const intervalSeconds = intervalSelect ? Number(intervalSelect.value) : 60;
+
+    stopRepeatSharing();
+    dashboardRepeatMode = mode;
+
+    updateRepeatSharingStatus(`Frequent sharing is active for ${mode}. Next send repeats every ${intervalSeconds} seconds.`, true);
+    await runRepeatSharing(mode, contacts);
+
+    dashboardRepeatTimer = window.setInterval(() => {
+        runRepeatSharing(mode, getDashboardContacts());
+    }, intervalSeconds * 1000);
+}
+
+function stopRepeatSharing() {
+    if (dashboardRepeatTimer !== null) {
+        window.clearInterval(dashboardRepeatTimer);
+        dashboardRepeatTimer = null;
+    }
+    updateRepeatSharingStatus('Frequent sharing is off.', false);
+}
+
+function initializeDashboardContacts() {
+    const form = document.getElementById('dashboard-contact-form');
+    const listNode = document.getElementById('dashboard-contact-list');
+    const shareButton = document.getElementById('share-live-location-btn');
+    const emergencyButton = document.getElementById('send-emergency-message-btn');
+    const startRepeatButton = document.getElementById('start-repeat-sharing-btn');
+    const stopRepeatButton = document.getElementById('stop-repeat-sharing-btn');
+    const refreshTelegramButton = document.getElementById('refresh-telegram-chats-btn');
+
+    renderDashboardContacts();
+    renderDiscoveredTelegramChats([]);
+    updateRepeatSharingStatus('Frequent sharing is off.', false);
+
+    form?.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const nameInput = document.getElementById('dashboard-contact-name');
+        const phoneInput = document.getElementById('dashboard-contact-phone');
+        const telegramInput = document.getElementById('dashboard-contact-telegram');
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const telegramChatId = telegramInput.value.trim();
+
+        if (!name || !phone) {
+            showDashboardContactFeedback('Enter both name and phone number.', 'error');
+            return;
+        }
+
+        if (typeof validatePhone === 'function' && !validatePhone(phone)) {
+            showDashboardContactFeedback('Enter a valid phone number.', 'error');
+            return;
+        }
+
+        const contacts = getDashboardContacts();
+        contacts.push({ name, phone, telegramChatId });
+        saveDashboardContacts(contacts);
+        renderDashboardContacts();
+
+        form.reset();
+        showDashboardContactFeedback(`${name} was added to trusted contacts.`, 'success');
+    });
+
+    shareButton?.addEventListener('click', function() {
+        shareDashboardLocation(getDashboardContacts());
+    });
+
+    emergencyButton?.addEventListener('click', function() {
+        sendDashboardEmergencyMessage(getDashboardContacts());
+    });
+
+    startRepeatButton?.addEventListener('click', function() {
+        startRepeatSharing();
+    });
+
+    stopRepeatButton?.addEventListener('click', function() {
+        stopRepeatSharing();
+    });
+
+    refreshTelegramButton?.addEventListener('click', function() {
+        refreshTelegramDiscoveredChats();
+    });
+
+    listNode?.addEventListener('click', function(event) {
+        const actionButton = event.target.closest('[data-dashboard-contact-action]');
+        if (!actionButton) {
+            return;
+        }
+
+        const contactIndex = Number(actionButton.dataset.dashboardContactIndex);
+        const contacts = getDashboardContacts();
+        const selectedContact = contacts[contactIndex];
+
+        if (!selectedContact) {
+            return;
+        }
+
+        if (actionButton.dataset.dashboardContactAction === 'remove') {
+            contacts.splice(contactIndex, 1);
+            saveDashboardContacts(contacts);
+            renderDashboardContacts();
+            showDashboardContactFeedback(`${selectedContact.name} was removed.`, 'success');
+            return;
+        }
+
+        if (actionButton.dataset.dashboardContactAction === 'location') {
+            shareDashboardLocation([selectedContact]);
+            return;
+        }
+
+        if (actionButton.dataset.dashboardContactAction === 'emergency') {
+            sendDashboardEmergencyMessage([selectedContact]);
+        }
+    });
+
+    document.getElementById('telegram-discovered-list')?.addEventListener('click', function(event) {
+        const button = event.target.closest('[data-telegram-chat-id]');
+        if (!button) {
+            return;
+        }
+
+        const telegramInput = document.getElementById('dashboard-contact-telegram');
+        const nameInput = document.getElementById('dashboard-contact-name');
+        if (telegramInput) {
+            telegramInput.value = button.dataset.telegramChatId || '';
+        }
+        if (nameInput && !nameInput.value.trim()) {
+            nameInput.value = button.dataset.telegramChatName || '';
+        }
+
+        showDashboardContactFeedback('Telegram chat ID filled in the contact form. Add the phone number and save.', 'success');
+    });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function setRoutePlannerFeedback(message, type) {
+    const feedbackNode = document.getElementById('route-planner-feedback');
+    if (!feedbackNode) {
+        return;
+    }
+
+    feedbackNode.textContent = message;
+    feedbackNode.className = `route-feedback ${type || ''}`.trim();
+}
+
+function findRouteAreaByName(name) {
+    if (!name) {
+        return null;
+    }
+
+    return routeHotspotLookup.get(String(name).trim().toUpperCase()) || null;
+}
+
+function fillCoordinatesFromArea(areaInputId, latInputId, lonInputId) {
+    const areaInput = document.getElementById(areaInputId);
+    const latInput = document.getElementById(latInputId);
+    const lonInput = document.getElementById(lonInputId);
+    const area = findRouteAreaByName(areaInput?.value);
+
+    if (!area || !latInput || !lonInput) {
+        return false;
+    }
+
+    latInput.value = area.lat;
+    lonInput.value = area.lon;
+    return true;
+}
+
+function findNearestRouteArea(lat, lon) {
+    if (!routeHotspots.length) {
+        return null;
+    }
+
+    let nearestArea = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    routeHotspots.forEach(hotspot => {
+        const distance = Math.hypot(Number(hotspot.lat) - lat, Number(hotspot.lon) - lon);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            nearestArea = hotspot;
+        }
+    });
+
+    return nearestArea;
+}
+
+async function useCurrentLocationForRoute() {
+    const button = document.getElementById('route-use-current-location-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Locating...';
+    }
+
+    try {
+        const location = await getCurrentLocation();
+        document.getElementById('route-start-lat').value = location.lat.toFixed(5);
+        document.getElementById('route-start-lon').value = location.lon.toFixed(5);
+
+        const nearestArea = findNearestRouteArea(location.lat, location.lon);
+        const areaInput = document.getElementById('route-start-area');
+        if (areaInput && nearestArea) {
+            areaInput.value = nearestArea.name;
+        }
+
+        setRoutePlannerFeedback('Current location added as point A.', 'success');
+    } catch (error) {
+        setRoutePlannerFeedback(error.message || 'Location access is needed to use your current point.', 'error');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Use My Current Location';
+        }
+    }
+}
+
+function swapRoutePoints() {
+    const startArea = document.getElementById('route-start-area');
+    const startLat = document.getElementById('route-start-lat');
+    const startLon = document.getElementById('route-start-lon');
+    const endArea = document.getElementById('route-end-area');
+    const endLat = document.getElementById('route-end-lat');
+    const endLon = document.getElementById('route-end-lon');
+
+    [startArea.value, endArea.value] = [endArea.value, startArea.value];
+    [startLat.value, endLat.value] = [endLat.value, startLat.value];
+    [startLon.value, endLon.value] = [endLon.value, startLon.value];
+
+    setRoutePlannerFeedback('Start and destination were swapped.', 'success');
+}
+
+function renderRouteSummaryGrid(result) {
+    const summaryGrid = document.getElementById('route-summary-grid');
+    if (!summaryGrid) {
+        return;
+    }
+
+    const recommended = result.recommended_route || {};
+    const direct = result.direct_route || {};
+
+    summaryGrid.innerHTML = `
+        <article class="route-summary-card">
+            <span>Recommended route</span>
+            <strong>${escapeHtml(recommended.risk_label || 'Lower-risk')}</strong>
+            <small>${escapeHtml(recommended.name || 'Suggested corridor')}</small>
+        </article>
+        <article class="route-summary-card">
+            <span>Risk reduction</span>
+            <strong>${escapeHtml(recommended.risk_reduction_pct ?? 0)}%</strong>
+            <small>Compared with the direct path</small>
+        </article>
+        <article class="route-summary-card">
+            <span>Estimated distance</span>
+            <strong>${escapeHtml(recommended.distance_km ?? 0)} km</strong>
+            <small>Extra ${escapeHtml(recommended.extra_distance_km ?? 0)} km for safer travel</small>
+        </article>
+        <article class="route-summary-card">
+            <span>Travel span</span>
+            <strong>${escapeHtml(recommended.estimated_minutes ?? 0)} min</strong>
+            <small>Direct route risk score ${escapeHtml(direct.route_score ?? 0)}</small>
+        </article>
+    `;
+}
+
+function renderRouteAlternatives(result) {
+    const node = document.getElementById('route-alternatives');
+    if (!node) {
+        return;
+    }
+
+    const alternatives = result.alternatives || [];
+    node.innerHTML = alternatives.map(option => `
+        <div class="route-chip">
+            <strong>${escapeHtml(option.name)}</strong>
+            <p>${escapeHtml(option.distance_km)} km | ${escapeHtml(option.risk_label)} | score ${escapeHtml(option.route_score)}</p>
+        </div>
+    `).join('');
+}
+
+function buildGoogleMapsRouteUrl(result) {
+    const waypoints = result.recommended_route?.waypoints || [];
+    if (waypoints.length < 2) {
+        return '';
+    }
+
+    const origin = `${waypoints[0].lat},${waypoints[0].lon}`;
+    const destination = `${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lon}`;
+    const middleWaypoints = waypoints
+        .slice(1, -1)
+        .slice(0, 3)
+        .map(point => `${point.lat},${point.lon}`)
+        .join('|');
+
+    const params = new URLSearchParams({
+        api: '1',
+        origin,
+        destination,
+        travelmode: 'driving'
+    });
+
+    if (middleWaypoints) {
+        params.set('waypoints', middleWaypoints);
+    }
+
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function renderRouteActions(result) {
+    const node = document.getElementById('route-map-actions');
+    if (!node) {
+        return;
+    }
+
+    const googleMapsUrl = buildGoogleMapsRouteUrl(result);
+    const destination = result.destination || {};
+    const destinationMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${destination.lat},${destination.lon}`)}`;
+
+    node.innerHTML = `
+        <a class="btn btn-secondary" href="${googleMapsUrl || destinationMapUrl}" target="_blank" rel="noopener">
+            Open In Google Maps
+        </a>
+        <a class="btn btn-secondary" href="${destinationMapUrl}" target="_blank" rel="noopener">
+            Open Destination
+        </a>
+    `;
+}
+
+function renderRouteWaypoints(result) {
+    const node = document.getElementById('route-waypoints');
+    if (!node) {
+        return;
+    }
+
+    const waypoints = result.recommended_route?.waypoints || [];
+    node.innerHTML = waypoints.map(point => `
+        <div class="route-waypoint-item">
+            <strong>${escapeHtml(point.label)}</strong>
+            <p>${escapeHtml(point.lat)}, ${escapeHtml(point.lon)}</p>
+        </div>
+    `).join('');
+}
+
+function renderRouteAvoidedHotspots(result) {
+    const node = document.getElementById('route-avoided-hotspots');
+    if (!node) {
+        return;
+    }
+
+    const hotspots = result.avoided_hotspots || [];
+    if (!hotspots.length) {
+        node.innerHTML = `
+            <div class="route-hotspot-item">
+                <strong>No major hotspot escape detected</strong>
+                <p>The selected path is still the lowest-risk option from the current Delhi dataset.</p>
+            </div>
+        `;
+        return;
+    }
+
+    node.innerHTML = hotspots.map(hotspot => `
+        <div class="route-hotspot-item">
+            <strong>${escapeHtml(hotspot.name)} (${escapeHtml(hotspot.risk_band)})</strong>
+            <p>
+                Score ${escapeHtml(hotspot.women_risk_score)} | direct path passes within ${escapeHtml(hotspot.direct_distance_km)} km,
+                safer route stays about ${escapeHtml(hotspot.safer_route_distance_km)} km away.
+            </p>
+        </div>
+    `).join('');
+}
+
+function buildMapPolyline(points, projector) {
+    return (points || [])
+        .map(point => {
+            const projected = projector(point);
+            return `${projected.x.toFixed(2)},${projected.y.toFixed(2)}`;
+        })
+        .join(' ');
+}
+
+function ensureLeafletRouteMap() {
+    if (routeMapState.map || !window.L) {
+        return routeMapState.map;
+    }
+
+    const mapNode = document.getElementById('route-map');
+    if (!mapNode) {
+        return null;
+    }
+
+    routeMapState.map = window.L.map(mapNode, {
+        zoomControl: true,
+        scrollWheelZoom: true,
+        attributionControl: true
+    }).setView([28.6139, 77.2090], 11);
+
+    routeMapState.tileLayer = window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(routeMapState.map);
+
+    return routeMapState.map;
+}
+
+function clearLeafletRouteLayers() {
+    if (!routeMapState.map) {
+        return;
+    }
+
+    routeMapState.layers.forEach(layer => {
+        routeMapState.map.removeLayer(layer);
+    });
+    routeMapState.layers = [];
+}
+
+function addLeafletRouteLayer(layer) {
+    if (!routeMapState.map || !layer) {
+        return;
+    }
+
+    layer.addTo(routeMapState.map);
+    routeMapState.layers.push(layer);
+}
+
+function createRouteDivIcon(type) {
+    return window.L.divIcon({
+        className: '',
+        html: `<span class="route-map-pin ${type}"></span>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
+}
+
+function renderLeafletRouteMap(result) {
+    const map = ensureLeafletRouteMap();
+    if (!map) {
+        return false;
+    }
+
+    clearLeafletRouteLayers();
+
+    const saferPoints = result.recommended_route?.points || [];
+    const directPoints = result.direct_route?.points || [];
+    const displayHotspots = result.display_hotspots || [];
+    const boundsPoints = [];
+
+    displayHotspots.forEach(hotspot => {
+        const hotspotLatLng = [Number(hotspot.lat), Number(hotspot.lon)];
+        boundsPoints.push(hotspotLatLng);
+
+        const circle = window.L.circleMarker(hotspotLatLng, {
+            radius: Math.max(5, Math.min(11, Number(hotspot.women_risk_score || 0) / 8)),
+            color: '#dc2626',
+            weight: 1.2,
+            fillColor: '#ef4444',
+            fillOpacity: 0.2
+        }).bindPopup(`
+            <strong>${escapeHtml(hotspot.name)}</strong><br>
+            Women safety score: ${escapeHtml(Number(hotspot.women_risk_score || 0).toFixed(1))}<br>
+            Total crime: ${escapeHtml(Number(hotspot.totalcrime || 0).toFixed(0))}<br>
+            Band: ${escapeHtml(hotspot.risk_band || 'High')}
+        `);
+
+        addLeafletRouteLayer(circle);
+    });
+
+    if (directPoints.length) {
+        const directLatLngs = directPoints.map(point => [Number(point.lat), Number(point.lon)]);
+        directLatLngs.forEach(point => boundsPoints.push(point));
+        addLeafletRouteLayer(window.L.polyline(directLatLngs, {
+            color: '#f97316',
+            weight: 4,
+            opacity: 0.85,
+            dashArray: '8 10'
+        }).bindPopup(`
+            <strong>Direct route</strong><br>
+            Risk: ${escapeHtml(result.direct_route?.risk_label || 'Guarded')}<br>
+            Score: ${escapeHtml(result.direct_route?.route_score ?? 0)}
+        `));
+    }
+
+    if (saferPoints.length) {
+        const saferLatLngs = saferPoints.map(point => [Number(point.lat), Number(point.lon)]);
+        saferLatLngs.forEach(point => boundsPoints.push(point));
+        addLeafletRouteLayer(window.L.polyline(saferLatLngs, {
+            color: '#0f766e',
+            weight: 6,
+            opacity: 0.95
+        }).bindPopup(`
+            <strong>${escapeHtml(result.recommended_route?.name || 'Safer route')}</strong><br>
+            Risk: ${escapeHtml(result.recommended_route?.risk_label || 'Lower-risk')}<br>
+            Score: ${escapeHtml(result.recommended_route?.route_score ?? 0)}<br>
+            Distance: ${escapeHtml(result.recommended_route?.distance_km ?? 0)} km
+        `));
+    }
+
+    const waypoints = result.recommended_route?.waypoints || [];
+    waypoints.forEach((waypoint, index) => {
+        const latLng = [Number(waypoint.lat), Number(waypoint.lon)];
+        boundsPoints.push(latLng);
+
+        let iconType = 'waypoint';
+        if (index === 0) {
+            iconType = 'start';
+        } else if (index === waypoints.length - 1) {
+            iconType = 'end';
+        }
+
+        const marker = window.L.marker(latLng, {
+            icon: createRouteDivIcon(iconType)
+        }).bindPopup(`
+            <strong>${escapeHtml(waypoint.label)}</strong><br>
+            ${escapeHtml(waypoint.lat)}, ${escapeHtml(waypoint.lon)}
+        `);
+
+        addLeafletRouteLayer(marker);
+    });
+
+    window.setTimeout(() => {
+        map.invalidateSize();
+        if (boundsPoints.length) {
+            map.fitBounds(boundsPoints, { padding: [28, 28] });
+        } else {
+            map.setView([28.6139, 77.2090], 11);
+        }
+    }, 40);
+
+    return true;
+}
+
+function renderRouteMap(result) {
+    const mapNode = document.getElementById('route-map');
+    if (!mapNode) {
+        return;
+    }
+
+    if (window.L && renderLeafletRouteMap(result)) {
+        return;
+    }
+
+    const saferPoints = result.recommended_route?.points || [];
+    const directPoints = result.direct_route?.points || [];
+    const hotspotPoints = result.display_hotspots || [];
+    const allPoints = [...saferPoints, ...directPoints, ...hotspotPoints];
+
+    if (!allPoints.length) {
+        mapNode.innerHTML = '<div class="route-map-empty">No route preview available yet.</div>';
+        return;
+    }
+
+    const latitudes = allPoints.map(point => Number(point.lat));
+    const longitudes = allPoints.map(point => Number(point.lon));
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLon = Math.min(...longitudes);
+    const maxLon = Math.max(...longitudes);
+    const latPadding = Math.max((maxLat - minLat) * 0.12, 0.01);
+    const lonPadding = Math.max((maxLon - minLon) * 0.12, 0.01);
+
+    const projector = (point) => {
+        const x = ((Number(point.lon) - (minLon - lonPadding)) / ((maxLon - minLon) + lonPadding * 2 || 1)) * 100;
+        const y = 100 - (((Number(point.lat) - (minLat - latPadding)) / ((maxLat - minLat) + latPadding * 2 || 1)) * 100);
+        return { x, y };
+    };
+
+    const hotspotCircles = hotspotPoints.map((hotspot, index) => {
+        const projected = projector(hotspot);
+        const radius = Math.max(1.5, Math.min(4.3, Number(hotspot.women_risk_score || 0) / 18));
+        const label = index < 5 ? `
+            <text x="${(projected.x + 1.6).toFixed(2)}" y="${(projected.y - 1.6).toFixed(2)}" font-size="2.4" fill="#7f1d1d">
+                ${escapeHtml(hotspot.name)}
+            </text>
+        ` : '';
+        return `
+            <circle cx="${projected.x.toFixed(2)}" cy="${projected.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="rgba(239, 68, 68, 0.25)" stroke="#dc2626" stroke-width="0.3"></circle>
+            ${label}
+        `;
+    }).join('');
+
+    const saferPolyline = buildMapPolyline(saferPoints, projector);
+    const directPolyline = buildMapPolyline(directPoints, projector);
+    const saferMarkers = saferPoints.map((point, index) => {
+        const projected = projector(point);
+        const fill = index === 0 ? '#0f766e' : (index === saferPoints.length - 1 ? '#1d4ed8' : '#14b8a6');
+        return `<circle cx="${projected.x.toFixed(2)}" cy="${projected.y.toFixed(2)}" r="1.7" fill="${fill}" stroke="#ffffff" stroke-width="0.4"></circle>`;
+    }).join('');
+
+    mapNode.innerHTML = `
+        <svg viewBox="0 0 100 100" role="img" aria-label="Safer route map">
+            <defs>
+                <pattern id="routeGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(15, 23, 42, 0.06)" stroke-width="0.2"></path>
+                </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#routeGrid)"></rect>
+            ${hotspotCircles}
+            <polyline points="${directPolyline}" fill="none" stroke="#f97316" stroke-width="1.2" stroke-dasharray="2.5 2.2"></polyline>
+            <polyline points="${saferPolyline}" fill="none" stroke="#0f766e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            ${saferMarkers}
+        </svg>
+    `;
+}
+
+function renderRouteResults(result) {
+    const shell = document.getElementById('route-results-shell');
+    if (shell) {
+        shell.hidden = false;
+    }
+
+    renderRouteSummaryGrid(result);
+    renderRouteActions(result);
+    renderRouteAlternatives(result);
+    renderRouteWaypoints(result);
+    renderRouteAvoidedHotspots(result);
+    renderRouteMap(result);
+
+    const summaryText = document.getElementById('route-summary-text');
+    if (summaryText) {
+        const warning = result.warning ? ` ${result.warning}` : '';
+        summaryText.textContent = `${result.recommended_route?.summary || ''}${warning}`;
+    }
+}
+
+async function requestSaferRoute() {
+    fillCoordinatesFromArea('route-start-area', 'route-start-lat', 'route-start-lon');
+    fillCoordinatesFromArea('route-end-area', 'route-end-lat', 'route-end-lon');
+
+    const readCoordinate = (elementId) => {
+        const value = document.getElementById(elementId)?.value?.trim();
+        return value ? Number(value) : Number.NaN;
+    };
+
+    const startLat = readCoordinate('route-start-lat');
+    const startLon = readCoordinate('route-start-lon');
+    const endLat = readCoordinate('route-end-lat');
+    const endLon = readCoordinate('route-end-lon');
+
+    if ([startLat, startLon, endLat, endLon].some(value => Number.isNaN(value))) {
+        setRoutePlannerFeedback('Enter valid coordinates for both point A and point B.', 'error');
+        return;
+    }
+
+    const button = document.getElementById('route-plan-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Analyzing...';
+    }
+
+    try {
+        const response = await fetch('/api/safer-route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                start: { lat: startLat, lon: startLon },
+                destination: { lat: endLat, lon: endLon }
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || data.status !== 'success') {
+            throw new Error(data.message || 'Unable to calculate the safer route.');
+        }
+
+        renderRouteResults(data);
+        setRoutePlannerFeedback('Safer route suggestion ready. Review the lower-risk corridor below.', 'success');
+    } catch (error) {
+        setRoutePlannerFeedback(error.message || 'Unable to calculate the safer route right now.', 'error');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Suggest Safer Route';
+        }
+    }
+}
+
+function initializeSaferRoutePlanner() {
+    const startAreaInput = document.getElementById('route-start-area');
+    const endAreaInput = document.getElementById('route-end-area');
+    const useCurrentButton = document.getElementById('route-use-current-location-btn');
+    const planButton = document.getElementById('route-plan-btn');
+    const swapButton = document.getElementById('route-swap-btn');
+
+    [startAreaInput, endAreaInput].forEach((input, index) => {
+        input?.addEventListener('change', function() {
+            if (index === 0) {
+                fillCoordinatesFromArea('route-start-area', 'route-start-lat', 'route-start-lon');
+            } else {
+                fillCoordinatesFromArea('route-end-area', 'route-end-lat', 'route-end-lon');
+            }
+        });
+
+        input?.addEventListener('blur', function() {
+            if (index === 0) {
+                fillCoordinatesFromArea('route-start-area', 'route-start-lat', 'route-start-lon');
+            } else {
+                fillCoordinatesFromArea('route-end-area', 'route-end-lat', 'route-end-lon');
+            }
+        });
+    });
+
+    useCurrentButton?.addEventListener('click', function() {
+        useCurrentLocationForRoute();
+    });
+
+    planButton?.addEventListener('click', function() {
+        requestSaferRoute();
+    });
+
+    swapButton?.addEventListener('click', function() {
+        swapRoutePoints();
+    });
 }
 
 function updateQueueCount() {
     try {
         const queue = JSON.parse(localStorage.getItem('emergency_queue') || '[]');
         const pendingCount = queue.filter(item => item.status === 'pending').length;
-        const queueCountElement = document.getElementById('queue-count');
-        if (queueCountElement) {
-            queueCountElement.textContent = pendingCount;
+        const queueNode = document.getElementById('queue-count');
+        if (queueNode) {
+            queueNode.textContent = pendingCount;
         }
-    } catch (e) {
-        console.error('Error updating queue count:', e);
-    }
-}
-
-function viewQueueStatus() {
-    try {
-        const queue = JSON.parse(localStorage.getItem('emergency_queue') || '[]');
-        const evidence = JSON.parse(localStorage.getItem('emergency_evidence') || '[]');
-        const lastLocation = JSON.parse(localStorage.getItem('last_known_location') || '{}');
-        
-        const pending = queue.filter(item => item.status === 'pending').length;
-        const sent = queue.filter(item => item.status === 'sent').length;
-        
-        let message = `📊 OFFLINE SAFETY STATUS\n\n`;
-        message += `Queue Status:\n`;
-        message += `  ⏳ Pending: ${pending}\n`;
-        message += `  ✅ Sent: ${sent}\n`;
-        message += `  📝 Total: ${queue.length}\n\n`;
-        message += `Evidence Recorded:\n`;
-        message += `  📹 Items: ${evidence.length}/5\n\n`;
-        message += `Last Known Location:\n`;
-        
-        if (lastLocation.lat && lastLocation.lon) {
-            message += `  📍 ${lastLocation.lat.toFixed(6)}, ${lastLocation.lon.toFixed(6)}\n`;
-            message += `  ⏰ ${lastLocation.timestamp ? new Date(lastLocation.timestamp).toLocaleString() : 'Unknown'}\n`;
-            if (lastLocation.accuracy) {
-                message += `  🎯 Accuracy: ±${Math.round(lastLocation.accuracy)}m\n`;
-            }
-        } else {
-            message += `  ❌ No location data\n`;
-        }
-        
-        message += `\n💡 Connection: ${navigator.onLine ? '✅ Online' : '📡 Offline'}`;
-        
-        alert(message);
-        
-        // Also log to console for debugging
-        console.log('Queue:', queue);
-        console.log('Evidence:', evidence);
-        console.log('Location:', lastLocation);
-    } catch (e) {
-        alert('Error loading queue status: ' + e.message);
-        console.error('Queue status error:', e);
+    } catch (error) {
+        console.error('Unable to read queue status:', error);
     }
 }
 </script>
