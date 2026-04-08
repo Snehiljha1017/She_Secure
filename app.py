@@ -860,10 +860,10 @@ def build_safer_route_response(start_lat, start_lon, end_lat, end_lon):
 
 @app.route("/")
 def landing():
-    """Start on login, or send signed-in users to the dashboard."""
+    """Start on signup for new users, or send signed-in users to the dashboard."""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+    return redirect(url_for('signup'))
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -1627,13 +1627,6 @@ def initialize_app_data():
     with app.app_context():
         db.create_all()
         print("Creating databases and importing CSV data...")
-        # ensure a demo user exists for quick login
-        if not User.query.filter_by(username='teacher').first():
-            demo = User(username='teacher', email='teacher@example.com',
-                        password=generate_password_hash('secret123'))
-            db.session.add(demo)
-            db.session.commit()
-            print("Inserted demo user: teacher / secret123")
         import_crime_data()
         import_environmental_data()
         import_women_crime_stats()

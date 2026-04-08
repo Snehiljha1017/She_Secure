@@ -36,7 +36,7 @@
             <div class="auth-card-header">
                 <span class="auth-badge">Member Sign In</span>
                 <h2>Login to SheSecure</h2>
-                <p>Use the demo account or your own registered profile.</p>
+                <p>Sign in with your registered account to access your safety dashboard.</p>
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -50,23 +50,19 @@
             <form class="auth-form" method="POST">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="teacher">
+                    <input type="text" id="username" name="username" required placeholder="Enter your username">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="secret123">
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block">Enter Dashboard</button>
             </form>
 
             <div class="auth-meta">
-                <div class="auth-demo">
-                    <strong>Demo access</strong>
-                    <span>teacher / secret123</span>
-                </div>
-                <p>New here? <a href="{{ url_for('signup') }}">Create an account</a></p>
+                <p>Don't have an account? <a href="{{ url_for('signup') }}" style="font-weight: 600; text-decoration: underline;">Sign up here</a></p>
             </div>
         </div>
     </div>
