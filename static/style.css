@@ -592,19 +592,38 @@ form select:focus {
 
 .alert {
     margin-top: 18px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-radius: 14px;
+    font-weight: 600;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.alert strong {
+    display: block;
     font-weight: 700;
+    margin-bottom: 2px;
 }
 
 .alert-danger {
-    background: rgba(217, 79, 61, 0.1);
+    background: rgba(217, 79, 61, 0.12);
     color: #a13022;
+    border-left: 4px solid #d94f3d;
 }
 
 .alert-success {
-    background: rgba(240, 138, 178, 0.16);
+    background: rgba(240, 138, 178, 0.12);
     color: #9b2e60;
+    border-left: 4px solid #f08ab2;
+}
+
+.form-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 4px;
+    display: block;
 }
 
 .dashboard-shell {

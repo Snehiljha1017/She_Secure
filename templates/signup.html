@@ -37,15 +37,18 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                        <div class="alert alert-{{ category }}">
+                            <strong>{{ 'Success!' if category == 'success' else 'Error!' }}</strong> {{ message }}
+                        </div>
                     {% endfor %}
                 {% endif %}
             {% endwith %}
 
-            <form class="auth-form" id="signup-form" method="POST">
+            <form class="auth-form" id="signup-form" method="POST" onsubmit="return validateSignup()">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="Choose a username">
+                    <input type="text" id="username" name="username" required placeholder="Choose a username (3-20 chars)" minlength="3" maxlength="20">
+                    <small class="form-text">Letters, numbers, underscores only</small>
                 </div>
 
                 <div class="form-group">
@@ -55,7 +58,13 @@
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Create a secure password">
+                    <input type="password" id="password" name="password" required placeholder="Create a secure password" minlength="6">
+                    <small class="form-text">Minimum 6 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="password_confirm">Confirm Password</label>
+                    <input type="password" id="password_confirm" name="password_confirm" required placeholder="Confirm your password" minlength="6">
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block">Create Account</button>
@@ -67,4 +76,17 @@
         </div>
     </div>
 </section>
+
+<script>
+function validateSignup() {
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('password_confirm').value;
+    
+    if (password !== confirm) {
+        alert('Passwords do not match!');
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}

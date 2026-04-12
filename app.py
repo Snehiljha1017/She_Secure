@@ -16,10 +16,15 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 
-app = Flask(__name__)
+app = Flask(__name__, instance_path=os.path.join(os.path.dirname(__file__), 'instance'))
 app.config['APP_NAME'] = 'SheSecure'
-app.config['SECRET_KEY'] = 'your_secret_key_here'  # Change this to a random secret key
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['SECRET_KEY'] = os.urandom(16).hex() if os.getenv('SECRET_KEY') is None else os.getenv('SECRET_KEY')
+
+# Ensure instance path exists
+os.makedirs(app.instance_path, exist_ok=True)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'site.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -231,7 +236,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     contacts = db.relationship('Contact', backref='user', lazy=True)
 
     def __repr__(self):
@@ -408,6 +413,20 @@ def load_delhi_hotspot_data():
         return hotspot_df
     except Exception as e:
         print(f"Error loading Delhi hotspot data: {e}")
+        return pd.DataFrame()
+
+
+def load_merged_crime_travel_data():
+    """Load the merged crime dataset for travel route planning."""
+    try:
+        travel_path = "merged_crime_travel_data.csv"
+        if not os.path.exists(travel_path):
+            return pd.DataFrame()
+        
+        travel_df = pd.read_csv(travel_path)
+        return travel_df
+    except Exception as e:
+        print(f"Error loading merged crime travel data: {e}")
         return pd.DataFrame()
 
 
@@ -868,24 +887,53 @@ def landing():
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     """Login page"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        
+        if not username or not password:
+            flash('Please provide both username and password.', 'danger')
+            return render_template("login.html")
+        
         user = User.query.filter_by(username=username).first()
+        
         if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
+            login_user(user, remember=True)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         else:
-            flash('Login unsuccessful. Please check username and password', 'danger')
+            flash('Login unsuccessful. Please check your username and password.', 'danger')
+    
     return render_template("login.html")
 
 @app.route("/signup", methods=['GET', 'POST'])
 def signup():
     """Signup page"""
     if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        password_confirm = request.form.get('password_confirm', '')
+        
+        # Validate inputs
+        if not username or len(username) < 3 or len(username) > 20:
+            flash('Username must be between 3-20 characters long.', 'danger')
+            return render_template("signup.html")
+        
+        if not email or '@' not in email:
+            flash('Please provide a valid email address.', 'danger')
+            return render_template("signup.html")
+        
+        if not password or len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'danger')
+            return render_template("signup.html")
+        
+        if password != password_confirm:
+            flash('Passwords do not match. Please try again.', 'danger')
+            return render_template("signup.html")
         
         # Check if user already exists
         if User.query.filter_by(username=username).first():
@@ -901,11 +949,12 @@ def signup():
             user = User(username=username, email=email, password=hashed_password)
             db.session.add(user)
             db.session.commit()
-            flash('Your account has been created! You can now log in', 'success')
+            flash('Your account has been created! You can now log in.', 'success')
             return redirect(url_for('login'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Error creating account: {str(e)}', 'danger')
+            flash(f'Error creating account. Please try again.', 'danger')
+            print(f"Signup error: {str(e)}")
             return render_template("signup.html")
     return render_template("signup.html")
 
@@ -1007,8 +1056,16 @@ def predictor():
 def location():
     """Location sharing page"""
     hotspot_df = load_delhi_hotspot_data()
+    travel_df = load_merged_crime_travel_data()
     route_hotspots = build_route_hotspot_options(hotspot_df)
-    return render_template("location.html", route_hotspots=route_hotspots)
+    
+    # Get top safe and risky cities
+    travel_cities = []
+    if not travel_df.empty:
+        # Sort by risk - get highest and lowest
+        travel_cities = travel_df[['City', 'Risk_Score', 'Risk_Level']].to_dict('records')
+    
+    return render_template("location.html", route_hotspots=route_hotspots, travel_cities=travel_cities)
 
 @app.route("/live-share/<token>")
 def live_share_view(token):
@@ -1575,6 +1632,45 @@ def get_cities():
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 
+@app.route("/api/travel-risk", methods=["GET"])
+@login_required
+def get_travel_risk_data():
+    """Get consolidated crime risk data for travel route planning"""
+    try:
+        travel_df = load_merged_crime_travel_data()
+        
+        if travel_df.empty:
+            return jsonify({'status': 'error', 'message': 'Travel data not available'}), 400
+        
+        # Convert dataframe to dictionary format
+        cities_data = []
+        for _, row in travel_df.iterrows():
+            city_info = {
+                'city': str(row['City']),
+                'risk_score': float(row['Risk_Score']),
+                'risk_level': str(row['Risk_Level']),
+                'total_incidents': int(row['Total_Incidents']),
+                'women_target_percentage': float(row['Women_Target_Percentage']),
+                'primary_crime_type': str(row['Primary_Crime_Type']),
+                'crime_severity_score': float(row['Crime_Severity_Score']),
+                'top_crimes': str(row['Top_3_Crime_Types'])
+            }
+            cities_data.append(city_info)
+        
+        return jsonify({
+            'status': 'success',
+            'cities': cities_data,
+            'summary': {
+                'total_cities': len(cities_data),
+                'average_risk': float(travel_df['Risk_Score'].mean()),
+                'highest_risk_city': str(travel_df.iloc[0]['City']),
+                'lowest_risk_city': str(travel_df.iloc[-1]['City'])
+            }
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+
 @app.route("/api/safer-route", methods=["POST"])
 @login_required
 def get_safer_route():
@@ -1634,4 +1730,4 @@ def initialize_app_data():
 
 if __name__ == "__main__":
     initialize_app_data()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
