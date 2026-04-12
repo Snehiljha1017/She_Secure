@@ -1,0 +1,146 @@
+/* SheSecure Logo Styling */
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.logo-badge {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #e46b9c 0%, #d44d84 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(224, 107, 156, 0.3);
+}
+
+.logo-badge-large {
+    width: 120px;
+    height: 120px;
+}
+
+.logo-badge-small {
+    width: 60px;
+    height: 60px;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-text-title {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #e46b9c 0%, #d44d84 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.5px;
+}
+
+.logo-text-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+/* Login/Signup Logo */
+.auth-logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-logo-badge {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 16px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* Dashboard Logo Mini */
+.dashboard-logo-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.dashboard-logo-icon {
+    width: 40px;
+    height: 40px;
+}
+
+.dashboard-logo-text {
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+}
+
+/* Hero Logo */
+.hero-logo {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 24px;
+    display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .logo-container {
+        gap: 10px;
+    }
+
+    .logo-text-title {
+        font-size: 24px;
+    }
+
+    .auth-logo-badge {
+        width: 80px;
+        height: 80px;
+    }
+
+    .hero-logo {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* Shield Icon */
+.shesecure-shield {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 48px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.shesecure-shield svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
