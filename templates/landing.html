@@ -27,118 +27,23 @@
         </div>
 
         <div class="hero-visual fade-in-down">
-            <svg class="landing-hero-logo-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+            <svg class="landing-hero-logo-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
                 <defs>
-                    <!-- Gradient for main shield -->
-                    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style="stop-color:#f472b6;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+                    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#5B7EFF" />
+                        <stop offset="100%" stop-color="#4C6FE6" />
                     </linearGradient>
-                    
-                    <!-- Shadow filter -->
                     <filter id="shadowFilter">
-                        <feDropShadow dx="8" dy="12" stdDeviation="12" flood-opacity="0.4"/>
-                    </filter>
-                    
-                    <!-- Glow filter -->
-                    <filter id="glowFilter">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                        <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
+                        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.2"/>
                     </filter>
                 </defs>
                 
-                <!-- Shadow circles for depth -->
-                <circle cx="200" cy="220" r="140" fill="black" opacity="0.08"/>
-                
                 <!-- Main Shield -->
-                <path d="M200 50 L120 85 L120 170 C120 250 200 310 200 310 C200 310 280 250 280 170 L280 85 Z" 
-                      fill="url(#mainGradient)" filter="url(#shadowFilter)" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M100 20 L155 45 L155 100 C155 150 125 190 100 210 C75 190 45 150 45 100 L45 45 Z" 
+                      fill="url(#mainGradient)" filter="url(#shadowFilter)" stroke="white" stroke-width="2" stroke-linejoin="round"/>
                 
-                <!-- Inner White Shield -->
-                <path d="M200 70 L135 100 L135 170 C135 240 200 290 200 290 C200 290 265 240 265 170 L265 100 Z" 
-                      fill="white" opacity="0.15"/>
-                
-                <!-- Top Heart/Shield Icon -->
-                <g transform="translate(200, 130)">
-                    <path d="M0,-12 C-8,-20 -16,-15 -16,-5 C-16,5 -8,12 0,18 C8,12 16,5 16,-5 C16,-15 8,-20 0,-12 Z" 
-                          fill="white" filter="url(#glowFilter)"/>
-                </g>
-                
-                <!-- Bottom Shield Icon -->
-                <g transform="translate(200, 220)">
-                    <path d="M0,-12 C-8,-20 -16,-15 -16,-5 C-16,5 -8,12 0,18 C8,12 16,5 16,-5 C16,-15 8,-20 0,-12 Z" 
-                          fill="white" opacity="0.8"/>
-                </g>
-                
-                <!-- Banner/Ribbon -->
-                <g filter="url(#shadowFilter)">
-                    <!-- Left ribbon end -->
-                    <path d="M80 180 Q70 185 75 200 L95 190 Z" fill="#7e22ce" stroke="white" stroke-width="3"/>
-                    <!-- Right ribbon end -->
-                    <path d="M320 180 Q330 185 325 200 L305 190 Z" fill="#7e22ce" stroke="white" stroke-width="3"/>
-                    
-                    <!-- Main banner -->
-                    <rect x="95" y="175" width="210" height="50" fill="#7e22ce" stroke="white" stroke-width="4" rx="4"/>
-                    
-                    <!-- Banner text -->
-                    <text x="200" y="215" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white" 
-                          text-anchor="middle" letter-spacing="2">SHESECURE</text>
-                </g>
-                
-                <!-- Decorative corner elements -->
-                <circle cx="130" cy="95" r="6" fill="white" opacity="0.3"/>
-                <circle cx="270" cy="95" r="6" fill="white" opacity="0.3"/>
-                <circle cx="130" cy="285" r="5" fill="white" opacity="0.2"/>
-                <circle cx="270" cy="285" r="5" fill="white" opacity="0.2"/>
-            </svg>
-            <div class="geometric-shape shape-1"></div>
-            <div class="geometric-shape shape-2"></div>
-            <div class="geometric-shape shape-3"></div>
-        </div>
-                
-                <!-- Main Shield -->
-                <path d="M200 50 L120 85 L120 170 C120 250 200 310 200 310 C200 310 280 250 280 170 L280 85 Z" 
-                      fill="url(#mainGradient)" filter="url(#shadowFilter)" stroke="white" stroke-width="8" stroke-linejoin="round"/>
-                
-                <!-- Inner White Shield -->
-                <path d="M200 70 L135 100 L135 170 C135 240 200 290 200 290 C200 290 265 240 265 170 L265 100 Z" 
-                      fill="white" opacity="0.15"/>
-                
-                <!-- Top Heart/Shield Icon -->
-                <g transform="translate(200, 130)">
-                    <path d="M0,-12 C-8,-20 -16,-15 -16,-5 C-16,5 -8,12 0,18 C8,12 16,5 16,-5 C16,-15 8,-20 0,-12 Z" 
-                          fill="white" filter="url(#glowFilter)"/>
-                </g>
-                
-                <!-- Bottom Shield Icon -->
-                <g transform="translate(200, 220)">
-                    <path d="M0,-12 C-8,-20 -16,-15 -16,-5 C-16,5 -8,12 0,18 C8,12 16,5 16,-5 C16,-15 8,-20 0,-12 Z" 
-                          fill="white" opacity="0.8"/>
-                </g>
-                
-                <!-- Banner/Ribbon -->
-                <g filter="url(#shadowFilter)">
-                    <!-- Left ribbon end -->
-                    <path d="M80 180 Q70 185 75 200 L95 190 Z" fill="#7e22ce" stroke="white" stroke-width="3"/>
-                    <!-- Right ribbon end -->
-                    <path d="M320 180 Q330 185 325 200 L305 190 Z" fill="#7e22ce" stroke="white" stroke-width="3"/>
-                    
-                    <!-- Main banner -->
-                    <rect x="95" y="175" width="210" height="50" fill="#7e22ce" stroke="white" stroke-width="4" rx="4"/>
-                    
-                    <!-- Banner text -->
-                    <text x="200" y="215" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white" 
-                          text-anchor="middle" letter-spacing="2">SHESECURE</text>
-                </g>
-                
-                <!-- Decorative corner elements -->
-                <circle cx="130" cy="95" r="6" fill="white" opacity="0.3"/>
-                <circle cx="270" cy="95" r="6" fill="white" opacity="0.3"/>
-                <circle cx="130" cy="285" r="5" fill="white" opacity="0.2"/>
-                <circle cx="270" cy="285" r="5" fill="white" opacity="0.2"/>
+                <!-- Checkmark -->
+                <path d="M75 120 L90 135 L130 95" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
             <div class="geometric-shape shape-1"></div>
             <div class="geometric-shape shape-2"></div>
