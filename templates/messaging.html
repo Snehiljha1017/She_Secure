@@ -1,0 +1,894 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="messaging-container">
+    <div class="messaging-header">
+        <h1>Emergency Messaging</h1>
+        <p>Instant real-time communication with trusted contacts</p>
+        <button class="btn-emergency-alert" onclick="sendEmergencyAlert()">
+            🚨 Send Emergency Alert
+        </button>
+    </div>
+
+    <div class="messaging-layout">
+        <!-- Contacts List -->
+        <div class="contacts-panel">
+            <h3>Trusted Contacts</h3>
+            <div class="contacts-list">
+                {% if contacts %}
+                    {% for contact in contacts %}
+                    <div class="contact-item" onclick="selectContact({{ contact.id }}, '{{ contact.name }}')">
+                        <div class="contact-avatar">{{ contact.name[0].upper() }}</div>
+                        <div class="contact-info">
+                            <div class="contact-name">{{ contact.name }}</div>
+                            <div class="contact-phone">{{ contact.phone }}</div>
+                        </div>
+                        <div class="unread-badge" id="unread-{{ contact.id }}"></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="no-contacts">No contacts yet. Add trusted contacts to start messaging.</p>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary">Add Contacts</a>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h2 id="chat-title">Select a contact</h2>
+                <span class="chat-status">Ready</span>
+            </div>
+
+            <div class="messages-container" id="messages-container">
+                <div class="no-messages">
+                    <p>Select a contact to start messaging</p>
+                    <p class="hint">Messages are delivered instantly in real-time</p>
+                </div>
+            </div>
+
+            <div class="message-input-area">
+                <div class="input-group">
+                    <textarea 
+                        id="message-input" 
+                        placeholder="Type your message (press Ctrl+Enter to send)..." 
+                        disabled
+                        onkeypress="handleKeyPress(event)">
+                    </textarea>
+                    <div class="input-actions">
+                        <button class="btn-icon" id="location-btn" onclick="shareLocation()" disabled title="Share Location">
+                            📍 Location
+                        </button>
+                        <button class="btn-send" id="send-btn" onclick="sendMessage()" disabled>
+                            Send →
+                        </button>
+                    </div>
+                </div>
+                <div class="message-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" id="emergency-checkbox">
+                        Mark as emergency
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Alert Modal -->
+<div id="emergency-modal" class="modal" style="display:none;">
+    <div class="modal-content emergency-modal">
+        <h2>🚨 Send Emergency Alert</h2>
+        <p>This will immediately notify all your trusted contacts</p>
+        
+        <div class="emergency-options">
+            <div class="option-group">
+                <label>Emergency Message:</label>
+                <textarea id="emergency-message" placeholder="Describe the emergency..." maxlength="500">I need urgent help!</textarea>
+            </div>
+
+            <div class="option-group">
+                <label>
+                    <input type="checkbox" id="include-location-emergency" checked>
+                    Include my current location
+                </label>
+            </div>
+
+            <div class="contact-selection">
+                <label>Send to:</label>
+                <div class="emergency-contacts">
+                    {% for contact in contacts %}
+                    <label class="contact-checkbox">
+                        <input type="checkbox" class="emergency-contact-check" value="{{ contact.id }}" checked>
+                        {{ contact.name }} ({{ contact.phone }})
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="confirmEmergencyAlert()">
+                🚨 SEND EMERGENCY ALERT
+            </button>
+            <button class="btn-secondary" onclick="closeEmergencyModal()">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.messaging-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.messaging-header {
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.12) 0%, rgba(224, 135, 175, 0.08) 100%);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.messaging-header h1 {
+    margin: 0;
+    color: #d04b84;
+    font-size: 28px;
+}
+
+.messaging-header p {
+    margin: 5px 0 15px;
+    color: #666;
+}
+
+.btn-emergency-alert {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-emergency-alert:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
+}
+
+.messaging-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+.contacts-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.contacts-panel h3 {
+    margin: 0 0 15px;
+    color: var(--text-primary);
+    font-size: 18px;
+}
+
+.contacts-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+}
+
+.contact-item:hover {
+    background: rgba(232, 107, 156, 0.1);
+    transform: translateX(4px);
+}
+
+.contact-item.active {
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.15), rgba(224, 135, 175, 0.1));
+    border-left: 3px solid #d04b84;
+}
+
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.3), rgba(224, 135, 175, 0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #d04b84;
+    flex-shrink: 0;
+}
+
+.contact-info {
+    flex: 1;
+}
+
+.contact-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.contact-phone {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.unread-badge {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FF6B6B;
+}
+
+.unread-badge:empty {
+    display: none;
+}
+
+.no-contacts {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 20px 0;
+}
+
+.chat-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.05), rgba(224, 135, 175, 0.03));
+}
+
+.chat-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 20px;
+}
+
+.chat-status {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #2ecc71;
+    color: white;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.no-messages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.no-messages p {
+    margin: 5px 0;
+}
+
+.no-messages .hint {
+    font-size: 14px;
+    color: #999;
+    margin-top: 10px;
+}
+
+.message {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message.outgoing {
+    justify-content: flex-end;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    word-wrap: break-word;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.message.incoming .message-bubble {
+    background: rgba(232, 107, 156, 0.1);
+    border-left: 3px solid #d04b84;
+    color: var(--text-primary);
+}
+
+.message.outgoing .message-bubble {
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.2), rgba(224, 135, 175, 0.15));
+    color: var(--text-primary);
+}
+
+.message.emergency .message-bubble {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+    color: white;
+    font-weight: 600;
+    padding: 14px 18px;
+    border-radius: 8px;
+    border: 2px solid #FF4757;
+}
+
+.message-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-align: right;
+}
+
+.message.incoming .message-time {
+    text-align: left;
+}
+
+.message-input-area {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.02), rgba(224, 135, 175, 0.01));
+}
+
+.input-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+#message-input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    max-height: 100px;
+    min-height: 45px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: #d04b84;
+    box-shadow: 0 0 8px rgba(208, 75, 132, 0.2);
+}
+
+#message-input:disabled {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.input-actions {
+    display: flex;
+    gap: 8px;
+    flex-direction: column;
+}
+
+.btn-icon, .btn-send {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.btn-icon {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.btn-icon:hover:not(:disabled) {
+    background: rgba(232, 107, 156, 0.15);
+}
+
+.btn-icon:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-send {
+    background: linear-gradient(135deg, #d04b84, #c73d7a);
+    color: white;
+    min-width: 100px;
+}
+
+.btn-send:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(208, 75, 132, 0.3);
+}
+
+.btn-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.message-options {
+    display: flex;
+    gap: 12px;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.checkbox-option input {
+    cursor: pointer;
+}
+
+/* Emergency Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.emergency-modal h2 {
+    color: #FF4757;
+    margin: 0 0 15px;
+    font-size: 24px;
+}
+
+.emergency-modal p {
+    color: var(--text-secondary);
+    margin: 0 0 20px;
+}
+
+.emergency-options {
+    margin-bottom: 20px;
+}
+
+.option-group {
+    margin-bottom: 20px;
+}
+
+.option-group label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.option-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.option-group input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.contact-selection {
+    margin-bottom: 20px;
+}
+
+.contact-selection label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.emergency-contacts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.contact-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.contact-checkbox:hover {
+    background: rgba(232, 107, 156, 0.1);
+}
+
+.contact-checkbox input {
+    margin-right: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+    color: white;
+    flex: 1;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.btn-secondary:hover {
+    background: rgba(232, 107, 156, 0.15);
+}
+
+@media (max-width: 960px) {
+    .messaging-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .contacts-panel {
+        max-height: 150px;
+    }
+    
+    .message-bubble {
+        max-width: 90%;
+    }
+}
+
+.btn-secondary {
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(232, 107, 156, 0.15);
+}
+</style>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+const BASE_URL = '{{ url_for("messaging") }}';
+let socket;
+let currentContactId = null;
+let currentContactName = null;
+
+// Initialize WebSocket connection
+document.addEventListener('DOMContentLoaded', function() {
+    socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connected to messaging server');
+        document.querySelector('.chat-status').textContent = 'Connected';
+        document.querySelector('.chat-status').style.background = '#2ecc71';
+    });
+    
+    socket.on('disconnect', function() {
+        console.log('Disconnected from messaging server');
+        document.querySelector('.chat-status').textContent = 'Offline';
+        document.querySelector('.chat-status').style.background = '#FF6B6B';
+    });
+    
+    socket.on('instant_message', function(data) {
+        if (currentContactId === data.contact_id || currentContactId == data.contact_id) {
+            displayMessage(data);
+        } else {
+            showUnreadBadge(data.contact_id);
+        }
+    });
+    
+    socket.on('emergency_alert_received', function(data) {
+        showEmergencyNotification(data);
+        if (currentContactId) {
+            loadMessages(currentContactId);
+        }
+    });
+    
+    socket.on('message_error', function(data) {
+        alert('Error: ' + data.error);
+    });
+});
+
+function selectContact(contactId, contactName) {
+    currentContactId = contactId;
+    currentContactName = contactName;
+    
+    // Update UI
+    document.querySelectorAll('.contact-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    document.getElementById('chat-title').textContent = contactName;
+    document.getElementById('message-input').disabled = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('location-btn').disabled = false;
+    
+    // Clear unread badge
+    const badge = document.getElementById(`unread-${contactId}`);
+    if (badge) badge.textContent = '';
+    
+    loadMessages(contactId);
+}
+
+function loadMessages(contactId) {
+    fetch(`/api/messages/${contactId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                
+                data.messages.forEach(msg => {
+                    displayMessageFromData(msg);
+                });
+                
+                // Scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+}
+
+function displayMessageFromData(msg) {
+    const container = document.getElementById('messages-container');
+    const messageDiv = document.createElement('div');
+    const isOutgoing = msg.sender_id == {{ current_user.id }};
+    
+    messageDiv.className = 'message' + (isOutgoing ? ' outgoing' : ' incoming');
+    if (msg.is_emergency) messageDiv.classList.add('emergency');
+    
+    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    messageDiv.innerHTML = `
+        <div>
+            <div class="message-bubble">${escapeHtml(msg.message)}</div>
+            <div class="message-time">${time}</div>
+        </div>
+    `;
+    
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function displayMessage(data) {
+    const container = document.getElementById('messages-container');
+    if (container.querySelector('.no-messages')) {
+        container.innerHTML = '';
+    }
+    
+    const messageDiv = document.createElement('div');
+    const isOutgoing = data.sender_id == {{ current_user.id }};
+    
+    messageDiv.className = 'message' + (isOutgoing ? ' outgoing' : ' incoming');
+    if (data.is_emergency) messageDiv.classList.add('emergency');
+    
+    const time = new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    messageDiv.innerHTML = `
+        <div>
+            <div class="message-bubble">${escapeHtml(data.message)}</div>
+            <div class="message-time">${time}</div>
+        </div>
+    `;
+    
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+    if (!currentContactId) {
+        alert('Please select a contact first');
+        return;
+    }
+    
+    const messageText = document.getElementById('message-input').value.trim();
+    if (!messageText) return;
+    
+    const isEmergency = document.getElementById('emergency-checkbox').checked;
+    
+    socket.emit('send_instant_message', {
+        contact_id: currentContactId,
+        message: messageText,
+        is_emergency: isEmergency
+    });
+    
+    document.getElementById('message-input').value = '';
+    document.getElementById('emergency-checkbox').checked = false;
+}
+
+function handleKeyPress(event) {
+    if (event.ctrlKey && event.keyCode === 13) {
+        sendMessage();
+    }
+}
+
+function shareLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            const location = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+            
+            socket.emit('send_instant_message', {
+                contact_id: currentContactId,
+                message: `📍 Location: ${location.lat}, ${location.lon}`,
+                location: location,
+                is_emergency: false
+            });
+        });
+    }
+}
+
+function sendEmergencyAlert() {
+    document.getElementById('emergency-modal').style.display = 'flex';
+}
+
+function closeEmergencyModal() {
+    document.getElementById('emergency-modal').style.display = 'none';
+}
+
+function confirmEmergencyAlert() {
+    const message = document.getElementById('emergency-message').value.trim() || 'I need urgent help!';
+    const includeLocation = document.getElementById('include-location-emergency').checked;
+    
+    const contactIds = Array.from(document.querySelectorAll('.emergency-contact-check:checked'))
+        .map(el => parseInt(el.value));
+    
+    if (contactIds.length === 0) {
+        alert('Please select at least one contact');
+        return;
+    }
+    
+    if (includeLocation && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            socket.emit('emergency_alert', {
+                message: message,
+                location: {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                },
+                contact_ids: contactIds
+            });
+            closeEmergencyModal();
+        });
+    } else {
+        socket.emit('emergency_alert', {
+            message: message,
+            location: {},
+            contact_ids: contactIds
+        });
+        closeEmergencyModal();
+    }
+}
+
+function showUnreadBadge(contactId) {
+    const badge = document.getElementById(`unread-${contactId}`);
+    if (badge) badge.textContent = '●';
+}
+
+function showEmergencyNotification(data) {
+    alert(`🚨 Emergency Alert from ${data.from_user}: ${data.message}`);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

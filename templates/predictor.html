@@ -7,16 +7,7 @@
     <!-- Logo Section -->
     <div style="padding: 24px 0; text-align: center; margin-bottom: 16px;">
         <div class="logo-badge logo-badge-small" style="margin: 0 auto 12px; width: 70px; height: 70px;">
-            <svg viewBox="0 0 60 60" class="shesecure-shield" role="img" focusable="false">
-                <defs>
-                    <linearGradient id="pred-shield-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#5B7EFF" />
-                        <stop offset="100%" stop-color="#4C6FE6" />
-                    </linearGradient>
-                </defs>
-                <path d="M30 6L48 14V28C48 40 42 50 30 55C18 50 12 40 12 28V14L30 6Z" fill="url(#pred-shield-blue)" stroke="white" stroke-width="1"/>
-                <path d="M25 32L28 35L38 25" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SheSecure Logo" class="shesecure-shield logo-badge-small" style="width: 60px; height: auto; object-fit: contain;">
         </div>
         <h2 style="margin: 0; color: var(--text-primary);">SheSecure</h2>
     </div>

@@ -27,24 +27,7 @@
         </div>
 
         <div class="hero-visual fade-in-down">
-            <svg class="landing-hero-logo-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
-                <defs>
-                    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#5B7EFF" />
-                        <stop offset="100%" stop-color="#4C6FE6" />
-                    </linearGradient>
-                    <filter id="shadowFilter">
-                        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.2"/>
-                    </filter>
-                </defs>
-                
-                <!-- Main Shield -->
-                <path d="M100 20 L155 45 L155 100 C155 150 125 190 100 210 C75 190 45 150 45 100 L45 45 Z" 
-                      fill="url(#mainGradient)" filter="url(#shadowFilter)" stroke="white" stroke-width="2" stroke-linejoin="round"/>
-                
-                <!-- Checkmark -->
-                <path d="M75 120 L90 135 L130 95" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SheSecure Logo" class="landing-hero-logo-large" style="max-width: 350px; width: 100%; height: auto; object-fit: contain;">
             <div class="geometric-shape shape-1"></div>
             <div class="geometric-shape shape-2"></div>
             <div class="geometric-shape shape-3"></div>
@@ -102,7 +85,7 @@
 <style>
 .landing-hero {
     padding: 120px 0 80px;
-    background: linear-gradient(135deg, rgba(255, 64, 129, 0.08) 0%, rgba(122, 61, 168, 0.08) 100%);
+    background: linear-gradient(135deg, rgba(232, 107, 156, 0.12) 0%, rgba(224, 135, 175, 0.08) 100%);
     position: relative;
     overflow: hidden;
     background-color: var(--bg-primary);

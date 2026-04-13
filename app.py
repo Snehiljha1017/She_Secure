@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -15,6 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 app = Flask(__name__, instance_path=os.path.join(os.path.dirname(__file__), 'instance'))
 app.config['APP_NAME'] = 'SheSecure'
@@ -30,6 +31,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Emergency queue for offline actions
 emergency_queue = []
@@ -246,7 +248,21 @@ class Contact(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
+    telegram_chat_id = db.Column(db.String(100), nullable=True)  # Telegram user ID for alerts
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class Message(db.Model):
+    """Real-time emergency messages between users and contacts"""
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    receiver_phone = db.Column(db.String(20), nullable=True)  # For sending to non-registered contacts
+    message_text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+    message_type = db.Column(db.String(20), default='text')  # text, emergency_alert, location_share
+    is_emergency = db.Column(db.Boolean, default=False)
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
 
 class CrimeReport(db.Model):
     """Crime dataset from India"""
@@ -1543,7 +1559,175 @@ def get_queue_status():
         "total": len(emergency_queue)
     })
 
-# ==================== DATA API ENDPOINTS ====================
+# ==================== QUICK EMERGENCY ENDPOINT ====================
+
+@app.route("/api/test-telegram", methods=["GET"])
+@login_required
+def test_telegram():
+    """Test if Telegram is working - debugging endpoint"""
+    try:
+        settings = load_telegram_bot_settings()
+        bot_token = settings["bot_token"]
+        
+        # Get all user's contacts
+        contacts = Contact.query.filter_by(user_id=current_user.id).all()
+        
+        config_exists = os.path.exists(os.path.join(app.instance_path, "telegram_bot.json"))
+        
+        return jsonify({
+            "status": "success",
+            "telegram_configured": telegram_bot_configured(),
+            "bot_token_exists": bool(bot_token),
+            "bot_token_preview": f"{bot_token[:20]}..." if bot_token else "None",
+            "config_file_exists": config_exists,
+            "config_path": os.path.join(app.instance_path, "telegram_bot.json"),
+            "contacts_total": len(contacts),
+            "contacts_with_telegram": sum(1 for c in contacts if c.telegram_chat_id),
+            "contacts_list": [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "phone": c.phone,
+                    "telegram_chat_id": c.telegram_chat_id,
+                    "has_tg": bool(c.telegram_chat_id)
+                }
+                for c in contacts
+            ]
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/emergency/danger", methods=["POST"])
+@login_required
+def emergency_danger():
+    """
+    ONE-TAP EMERGENCY: Send "I'm in Danger" alert + live location to all trusted contacts
+    (both SMS and Telegram simultaneously)
+    """
+    try:
+        data = request.get_json() or {}
+        location = data.get("location", {})
+        lat = location.get("lat")
+        lon = location.get("lon")
+        
+        # Get all user's contacts
+        contacts = Contact.query.filter_by(user_id=current_user.id).all()
+        
+        if not contacts:
+            return jsonify({"status": "error", "message": "No trusted contacts found"}), 400
+        
+        sent_sms = 0
+        failed_sms = 0
+        sent_telegram = 0
+        failed_telegram = 0
+        sms_errors = []
+        telegram_errors = []
+        
+        # Emergency message
+        emergency_msg = f"🚨 EMERGENCY: {current_user.username} is in danger!"
+        if lat and lon:
+            emergency_msg += f"\n📍 Location: {lat}, {lon}"
+            emergency_msg += f"\n🗺️ https://maps.google.com/?q={lat},{lon}"
+        
+        # Send SMS to phone contacts
+        for contact in contacts:
+            if contact.phone:
+                try:
+                    # Queue for SMS gateway
+                    emergency_queue.append({
+                        "id": str(uuid4()),
+                        "timestamp": datetime.utcnow(),
+                        "phone": contact.phone,
+                        "message": emergency_msg,
+                        "status": "queued"
+                    })
+                    sent_sms += 1
+                except Exception as e:
+                    failed_sms += 1
+                    sms_errors.append(f"{contact.name}: {str(e)}")
+        
+        # Send Telegram to Telegram contacts - DIRECT AND VERIFIED
+        settings = load_telegram_bot_settings()
+        bot_token = settings.get("bot_token", "").strip()
+        
+        if bot_token:
+            for contact in contacts:
+                chat_id = str(contact.telegram_chat_id or "").strip()
+                
+                if chat_id and chat_id.isdigit():
+                    try:
+                        print(f"\n[TELEGRAM] Attempting send...")
+                        print(f"[TELEGRAM] Chat ID: {chat_id}")
+                        print(f"[TELEGRAM] Message: {emergency_msg}")
+                        print(f"[TELEGRAM] Bot Token: {bot_token[:20]}...")
+                        
+                        # Make direct API request
+                        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                        payload = {
+                            "chat_id": chat_id,
+                            "text": emergency_msg
+                        }
+                        
+                        api_request = urlrequest.Request(
+                            url,
+                            data=json.dumps(payload).encode("utf-8"),
+                            method="POST",
+                            headers={"Content-Type": "application/json"}
+                        )
+                        
+                        with urlrequest.urlopen(api_request, timeout=10) as response:
+                            response_body = response.read().decode("utf-8")
+                            response_data = json.loads(response_body)
+                            
+                            print(f"[TELEGRAM] Response: {response_data}")
+                            
+                            if response_data.get("ok"):
+                                print(f"[TELEGRAM] ✅ SUCCESS - Message sent!")
+                                sent_telegram += 1
+                            else:
+                                error_desc = response_data.get("description", "Unknown error")
+                                print(f"[TELEGRAM] ❌ FAILED - {error_desc}")
+                                failed_telegram += 1
+                                telegram_errors.append(f"{contact.name}: {error_desc}")
+                    
+                    except urlerror.HTTPError as e:
+                        error_body = e.read().decode("utf-8", errors="replace")
+                        print(f"[TELEGRAM] ❌ HTTP ERROR: {error_body}")
+                        failed_telegram += 1
+                        telegram_errors.append(f"{contact.name}: HTTP {e.code}")
+                    
+                    except urlerror.URLError as e:
+                        print(f"[TELEGRAM] ❌ CONNECTION ERROR: {str(e)}")
+                        failed_telegram += 1
+                        telegram_errors.append(f"{contact.name}: {str(e.reason)}")
+                    
+                    except Exception as e:
+                        print(f"[TELEGRAM] ❌ UNEXPECTED ERROR: {str(e)}")
+                        failed_telegram += 1
+                        telegram_errors.append(f"{contact.name}: {str(e)}")
+        else:
+            print("[TELEGRAM] ⚠️ Bot token not configured")
+        
+        print(f"\n[RESULT] SMS: {sent_sms} sent, {failed_sms} failed")
+        print(f"[RESULT] Telegram: {sent_telegram} sent, {failed_telegram} failed")
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Alert sent to {sent_sms + sent_telegram} contacts",
+            "sms_sent": sent_sms,
+            "sms_failed": failed_sms,
+            "telegram_sent": sent_telegram,
+            "telegram_failed": failed_telegram,
+            "errors": sms_errors + telegram_errors
+        }), 200
+    
+    except Exception as e:
+        print(f"[EMERGENCY] ❌ CRITICAL ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ==================== QUICK EMERGENCY ENDPOINT ====================
 
 @app.route("/api/crime-data", methods=["GET"])
 def get_crime_data():
@@ -1718,6 +1902,450 @@ def combined():
     except:
         return dashboard()
 
+# ==================== MESSAGING ROUTES ====================
+
+# ==================== CONTACT MANAGEMENT APIS ====================
+
+@app.route("/api/contacts", methods=["GET"])
+@login_required
+def get_contacts():
+    """Retrieve all contacts for the current user"""
+    try:
+        contacts = Contact.query.filter_by(user_id=current_user.id).all()
+        return jsonify({
+            "status": "success",
+            "contacts": [{
+                "id": c.id,
+                "name": c.name,
+                "phone": c.phone,
+                "telegram_chat_id": c.telegram_chat_id or "",
+                "telegramChatId": c.telegram_chat_id or ""
+            } for c in contacts]
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/contacts", methods=["POST"])
+@login_required
+def add_contact():
+    """Add a new trusted contact"""
+    try:
+        data = request.get_json() or {}
+        name = (data.get("name") or "").strip()
+        phone = (data.get("phone") or "").strip()
+        telegram_chat_id = (data.get("telegram_chat_id") or data.get("telegramChatId") or "").strip()
+
+        if not name or not phone:
+            return jsonify({"status": "error", "message": "Name and phone are required"}), 400
+
+        # Check for duplicates
+        existing = Contact.query.filter_by(user_id=current_user.id, phone=phone).first()
+        if existing:
+            return jsonify({"status": "error", "message": "Contact with this phone already exists"}), 400
+
+        contact = Contact(
+            name=name,
+            phone=phone,
+            telegram_chat_id=telegram_chat_id if telegram_chat_id else None,
+            user_id=current_user.id
+        )
+        db.session.add(contact)
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": f"{name} added to trusted contacts",
+            "contact": {
+                "id": contact.id,
+                "name": contact.name,
+                "phone": contact.phone,
+                "telegram_chat_id": contact.telegram_chat_id or ""
+            }
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/contacts/<int:contact_id>", methods=["PUT"])
+@login_required
+def update_contact(contact_id):
+    """Update an existing contact"""
+    try:
+        contact = Contact.query.filter_by(id=contact_id, user_id=current_user.id).first()
+        if not contact:
+            return jsonify({"status": "error", "message": "Contact not found"}), 404
+
+        data = request.get_json() or {}
+        if "name" in data:
+            contact.name = (data["name"] or "").strip()
+        if "phone" in data:
+            contact.phone = (data["phone"] or "").strip()
+        if "telegram_chat_id" in data or "telegramChatId" in data:
+            contact.telegram_chat_id = (data.get("telegram_chat_id") or data.get("telegramChatId") or "").strip()
+            if not contact.telegram_chat_id:
+                contact.telegram_chat_id = None
+
+        db.session.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Contact updated",
+            "contact": {
+                "id": contact.id,
+                "name": contact.name,
+                "phone": contact.phone,
+                "telegram_chat_id": contact.telegram_chat_id or ""
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/contacts/<int:contact_id>", methods=["DELETE"])
+@login_required
+def delete_contact(contact_id):
+    """Delete a trusted contact"""
+    try:
+        contact = Contact.query.filter_by(id=contact_id, user_id=current_user.id).first()
+        if not contact:
+            return jsonify({"status": "error", "message": "Contact not found"}), 404
+
+        contact_name = contact.name
+        db.session.delete(contact)
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": f"{contact_name} removed from trusted contacts"
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/messaging")
+@login_required
+def messaging():
+    """Real-time emergency messaging interface"""
+    conversations = db.session.query(
+        Message.sender_id, Message.receiver_id, db.func.max(Message.timestamp).label('last_message')
+    ).filter(
+        (Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id)
+    ).group_by(Message.sender_id, Message.receiver_id).all()
+    
+    contacts = Contact.query.filter_by(user_id=current_user.id).all()
+    return render_template("messaging.html", contacts=contacts, conversations=conversations)
+
+@app.route("/api/messages/<int:contact_id>", methods=["GET"])
+@login_required
+def get_messages(contact_id):
+    """Fetch conversation history with a specific contact"""
+    try:
+        contact = Contact.query.filter_by(id=contact_id, user_id=current_user.id).first()
+        if not contact:
+            return jsonify({"status": "error", "message": "Contact not found"}), 404
+        
+        messages = Message.query.filter(
+            ((Message.sender_id == current_user.id) & (Message.receiver_phone == contact.phone)) |
+            ((Message.receiver_id == current_user.id) & (Message.sender_id == current_user.id))
+        ).order_by(Message.timestamp).all()
+        
+        # Mark messages as read
+        for msg in messages:
+            if msg.receiver_id == current_user.id:
+                msg.is_read = True
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success",
+            "contact": {
+                "id": contact.id,
+                "name": contact.name,
+                "phone": contact.phone
+            },
+            "messages": [{
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "message": m.message_text,
+                "timestamp": m.timestamp.isoformat(),
+                "is_emergency": m.is_emergency,
+                "message_type": m.message_type
+            } for m in messages]
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+@app.route("/api/messages/send", methods=["POST"])
+@login_required
+def send_message():
+    """Send an instant message to a contact"""
+    try:
+        data = request.get_json() or {}
+        contact_id = data.get("contact_id")
+        message_text = data.get("message", "").strip()
+        is_emergency = data.get("is_emergency", False)
+        message_type = data.get("message_type", "text")
+        
+        if not contact_id or not message_text:
+            return jsonify({"status": "error", "message": "Contact ID and message are required"}), 400
+        
+        contact = Contact.query.filter_by(id=contact_id, user_id=current_user.id).first()
+        if not contact:
+            return jsonify({"status": "error", "message": "Contact not found"}), 404
+        
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_phone=contact.phone,
+            message_text=message_text,
+            is_emergency=is_emergency,
+            message_type=message_type,
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(msg)
+        db.session.commit()
+        
+        # Emit via WebSocket for instant delivery
+        socketio.emit('new_message', {
+            'sender_id': current_user.id,
+            'sender_name': current_user.username,
+            'contact_id': contact_id,
+            'contact_name': contact.name,
+            'message': message_text,
+            'timestamp': msg.timestamp.isoformat(),
+            'is_emergency': is_emergency,
+            'message_type': message_type
+        }, broadcast=True)
+        
+        return jsonify({
+            "status": "success",
+            "message_id": msg.id,
+            "timestamp": msg.timestamp.isoformat()
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+# ==================== QUICK ACTION ENDPOINTS ====================
+
+@app.route("/api/quick/share-location", methods=["POST"])
+@login_required
+def quick_share_location():
+    """Single-tap to share location to all trusted contacts"""
+    try:
+        data = request.get_json() or {}
+        location = data.get("location", {})
+        
+        if not location or not location.get("lat") or not location.get("lon"):
+            return jsonify({"status": "error", "message": "Location required"}), 400
+        
+        contacts = Contact.query.filter_by(user_id=current_user.id).all()
+        if not contacts:
+            return jsonify({"status": "error", "message": "No trusted contacts found"}), 400
+        
+        message_text = f"📍 Check my location: {location['lat']}, {location['lon']}"
+        
+        sent_to = []
+        for contact in contacts:
+            msg = Message(
+                sender_id=current_user.id,
+                receiver_phone=contact.phone,
+                message_text=message_text,
+                is_emergency=False,
+                message_type='location_share',
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(msg)
+            sent_to.append(contact.name)
+        
+        db.session.commit()
+        
+        # Broadcast via WebSocket
+        socketio.emit('location_shared', {
+            'from_user': current_user.username,
+            'location': location,
+            'message': message_text,
+            'timestamp': datetime.utcnow().isoformat(),
+            'sent_to': sent_to
+        }, broadcast=True)
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Location shared with {len(sent_to)} contact(s)",
+            "contacts": sent_to
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+@app.route("/api/quick/danger-alert", methods=["POST"])
+@login_required
+def quick_danger_alert():
+    """Single-tap emergency alert to all trusted contacts"""
+    try:
+        data = request.get_json() or {}
+        location = data.get("location", {})
+        
+        contacts = Contact.query.filter_by(user_id=current_user.id).all()
+        if not contacts:
+            return jsonify({"status": "error", "message": "No trusted contacts found"}), 400
+        
+        message_text = "🚨 I'M IN DANGER! Please help me immediately!"
+        if location and location.get("lat") and location.get("lon"):
+            message_text += f"\n📍 Location: {location['lat']}, {location['lon']}"
+        
+        sent_to = []
+        for contact in contacts:
+            msg = Message(
+                sender_id=current_user.id,
+                receiver_phone=contact.phone,
+                message_text=message_text,
+                is_emergency=True,
+                message_type='emergency_alert',
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(msg)
+            sent_to.append(contact.name)
+        
+        db.session.commit()
+        
+        # Broadcast emergency alert via WebSocket
+        socketio.emit('danger_alert', {
+            'from_user': current_user.username,
+            'message': message_text,
+            'location': location,
+            'timestamp': datetime.utcnow().isoformat(),
+            'sent_to': sent_to
+        }, broadcast=True)
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Emergency alert sent to {len(sent_to)} contact(s)",
+            "contacts": sent_to,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+# ==================== WEBSOCKET HANDLERS ====================
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle WebSocket connection"""
+    if current_user.is_authenticated:
+        join_room(f'user_{current_user.id}')
+        emit('connection_response', {
+            'data': 'Connected to messaging server',
+            'user_id': current_user.id,
+            'username': current_user.username
+        })
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle WebSocket disconnection"""
+    if current_user.is_authenticated:
+        leave_room(f'user_{current_user.id}')
+
+@socketio.on('send_instant_message')
+def handle_instant_message(data):
+    """Handle instant message via WebSocket for real-time delivery"""
+    if not current_user.is_authenticated:
+        return {'status': 'error', 'message': 'Not authenticated'}
+    
+    try:
+        contact_id = data.get('contact_id')
+        message_text = data.get('message', '').strip()
+        is_emergency = data.get('is_emergency', False)
+        location = data.get('location', {})
+        
+        if not contact_id or not message_text:
+            emit('message_error', {'error': 'Contact ID and message are required'})
+            return
+        
+        contact = Contact.query.filter_by(id=contact_id, user_id=current_user.id).first()
+        if not contact:
+            emit('message_error', {'error': 'Contact not found'})
+            return
+        
+        # Store in database
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_phone=contact.phone,
+            message_text=message_text,
+            is_emergency=is_emergency,
+            message_type='text' if not location else 'location_share',
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(msg)
+        db.session.commit()
+        
+        # Emit instantly to all connected clients
+        emit('instant_message', {
+            'id': msg.id,
+            'sender_id': current_user.id,
+            'sender_name': current_user.username,
+            'contact_id': contact_id,
+            'contact_name': contact.name,
+            'message': message_text,
+            'location': location,
+            'timestamp': msg.timestamp.isoformat(),
+            'is_emergency': is_emergency
+        }, broadcast=True)
+        
+        # Acknowledgment
+        emit('message_sent', {
+            'status': 'success',
+            'message_id': msg.id,
+            'timestamp': msg.timestamp.isoformat()
+        })
+        
+    except Exception as e:
+        emit('message_error', {'error': str(e)})
+
+@socketio.on('emergency_alert')
+def handle_emergency_alert(data):
+    """Handle instant emergency alert to all trusted contacts"""
+    if not current_user.is_authenticated:
+        return {'status': 'error', 'message': 'Not authenticated'}
+    
+    try:
+        message_text = data.get('message', 'EMERGENCY ALERT!').strip()
+        location = data.get('location', {})
+        contact_ids = data.get('contact_ids', [])
+        
+        contacts = Contact.query.filter(
+            Contact.user_id == current_user.id,
+            Contact.id.in_(contact_ids) if contact_ids else True
+        ).all()
+        
+        sent_to = []
+        for contact in contacts:
+            msg = Message(
+                sender_id=current_user.id,
+                receiver_phone=contact.phone,
+                message_text=message_text,
+                is_emergency=True,
+                message_type='emergency_alert',
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(msg)
+            sent_to.append(contact.name)
+        
+        db.session.commit()
+        
+        # Broadcast emergency alert
+        emit('emergency_alert_received', {
+            'from_user': current_user.username,
+            'message': message_text,
+            'location': location,
+            'timestamp': datetime.utcnow().isoformat(),
+            'sent_to': sent_to
+        }, broadcast=True)
+        
+        emit('emergency_sent', {
+            'status': 'success',
+            'contacts_notified': len(sent_to),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        emit('message_error', {'error': str(e)})
+
 def initialize_app_data():
     """Initialize database tables and seed data used by the app."""
     with app.app_context():
@@ -1730,4 +2358,4 @@ def initialize_app_data():
 
 if __name__ == "__main__":
     initialize_app_data()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

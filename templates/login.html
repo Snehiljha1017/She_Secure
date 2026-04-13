@@ -35,16 +35,7 @@
         <div class="auth-card auth-card-login fade-in-up">
             <div class="auth-logo-section">
                 <div class="logo-badge auth-logo-badge">
-                    <svg viewBox="0 0 60 60" class="shesecure-shield" role="img" focusable="false">
-                        <defs>
-                            <linearGradient id="shield-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#5B7EFF" />
-                                <stop offset="100%" stop-color="#4C6FE6" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M30 6L48 14V28C48 40 42 50 30 55C18 50 12 40 12 28V14L30 6Z" fill="url(#shield-blue)" stroke="white" stroke-width="1"/>
-                        <path d="M25 32L28 35L38 25" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    </svg>
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SheSecure Logo" class="shesecure-shield logo-badge-small" style="width: 100px; height: auto; object-fit: contain;">
                 </div>
                 <h1 style="font-size: 28px; margin-bottom: 4px; color: #1a1a1a;">SheSecure</h1>
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 0;">Your Safety, Our Priority</p>

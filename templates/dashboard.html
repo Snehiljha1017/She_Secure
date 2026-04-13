@@ -15,16 +15,7 @@
 <section class="dashboard-shell">
     <div class="container">
         <div class="dashboard-logo-mini fade-in" style="margin-bottom: 24px;">
-            <svg viewBox="0 0 60 60" class="dashboard-logo-icon" role="img" focusable="false">
-                <defs>
-                    <linearGradient id="dash-shield-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#5B7EFF" />
-                        <stop offset="100%" stop-color="#4C6FE6" />
-                    </linearGradient>
-                </defs>
-                <path d="M30 6L48 14V28C48 40 42 50 30 55C18 50 12 40 12 28V14L30 6Z" fill="url(#dash-shield-blue)" stroke="white" stroke-width="1"/>
-                <path d="M25 32L28 35L38 25" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SheSecure Logo" class="dashboard-logo-icon logo-badge-small" style="width: 60px; height: auto; object-fit: contain;">
             <span class="dashboard-logo-text">SheSecure</span>
         </div>
 
@@ -74,11 +65,14 @@
                     SOS
                 </button>
                 <div class="dashboard-actions">
+                    <button type="button" class="btn btn-primary" id="quick-share-location-btn" onclick="quickShareLocation()">
+                        📍 Share Location
+                    </button>
+                    <button type="button" class="btn btn-danger" id="quick-danger-btn" onclick="quickSendDanger()">
+                        🚨 I'm in Danger!
+                    </button>
                     <button type="button" class="btn btn-primary" data-emergency-action="call" data-emergency-number="112">
                         Call 112
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-emergency-action="message" data-emergency-target="trusted-contacts">
-                        Message Contacts
                     </button>
                 </div>
             </section>
@@ -86,43 +80,32 @@
             <section class="command-card slide-in-up">
                 <div class="command-card-header">
                     <span class="eyebrow">Trusted contacts</span>
-                    <h2>Add contacts and send your live location fast</h2>
+                    <h2>Add contacts and send live location in emergency</h2>
                 </div>
                 <p class="dashboard-contact-copy">
-                    Save the people you trust most here, then send them your current location or an emergency alert
-                    message without leaving the dashboard.
+                    Save phone numbers and Telegram IDs. One tap sends emergency alert + location to everyone.
                 </p>
 
                 <form id="dashboard-contact-form" class="dashboard-contact-form">
                     <input type="text" id="dashboard-contact-name" placeholder="Contact name" required>
                     <input type="tel" id="dashboard-contact-phone" placeholder="Phone number" required>
-                    <input type="text" id="dashboard-contact-telegram" placeholder="Telegram chat ID for direct send">
-                    <button type="submit" class="btn btn-primary">Add Trusted Contact</button>
+                    <input type="text" id="dashboard-contact-telegram" placeholder="Telegram chat ID (optional)">
+                    <button type="submit" class="btn btn-primary">Add Contact</button>
                 </form>
 
-                <div class="dashboard-telegram-panel">
-                    <div class="dashboard-telegram-head">
-                        <div>
-                            <strong>Telegram Setup</strong>
-                            <p>Ask a trusted contact to open your bot and tap <code>/start</code>, then fetch their chat ID here.</p>
-                        </div>
-                        <button type="button" class="btn btn-secondary" id="refresh-telegram-chats-btn">
-                            Find Telegram Contacts
-                        </button>
-                    </div>
-                    <div id="telegram-discovered-list" class="telegram-discovered-list"></div>
+                <div class="dashboard-contact-actions">
+                    <button type="button" class="btn btn-danger" id="emergency-danger-btn" style="font-size: 18px; padding: 15px; flex: 1; background: linear-gradient(135deg, #ff4757 0%, #ee5a6f 100%); border: 2px solid #ff0000;">
+                        🚨 I'M IN DANGER (Send to All)
+                    </button>
                 </div>
 
                 <div class="dashboard-contact-actions">
                     <button type="button" class="btn btn-secondary" id="share-live-location-btn">
-                        Share Live Location
+                        📍 Share Live Location
                     </button>
                     <button type="button" class="btn btn-primary" id="send-emergency-message-btn">
                         Send Emergency Message
                     </button>
-                    <a href="{{ url_for('location') }}" class="btn btn-secondary">
-                        Open Live Map
-                    </a>
                 </div>
 
                 <div class="dashboard-repeat-panel">
@@ -305,6 +288,12 @@
                         <div class="feature-icon feature-icon-analytics">📈</div>
                         <h3>Explore Safety Data</h3>
                         <p>Deep dive into crime statistics and predictive insights for your area.</p>
+                        <span class="feature-arrow">Start →</span>
+                    </a>
+                    <a href="{{ url_for('messaging') }}" class="feature-card feature-card-messaging">
+                        <div class="feature-icon feature-icon-messaging">💬📱</div>
+                        <h3>Emergency Messaging</h3>
+                        <p>Instant real-time communication with trusted contacts. No delays.</p>
                         <span class="feature-arrow">Start →</span>
                     </a>
                 </div>
@@ -1048,6 +1037,86 @@ async function sendDashboardEmergencyMessage(contacts) {
     }
 }
 
+/**ONE-TAP DANGER ALERT: Send emergency + location to ALL contacts (SMS + Telegram)*/
+async function sendEmergencyDangerAlert() {
+    const contacts = getDashboardContacts();
+    
+    if (!contacts.length) {
+        showDashboardContactFeedback('❌ No trusted contacts saved. Add at least one contact first!', 'error');
+        return;
+    }
+
+    const button = document.getElementById('emergency-danger-btn');
+    const originalText = button?.textContent || '🚨 I\'M IN DANGER';
+    
+    try {
+        // Disable button and show loading state
+        if (button) {
+            button.disabled = true;
+            button.textContent = '⏳ Sending...';
+        }
+        
+        // Get current location
+        let location = { lat: null, lon: null };
+        try {
+            const geoLocation = await getCurrentLocation();
+            location = { lat: geoLocation.lat, lon: geoLocation.lon };
+        } catch (e) {
+            console.warn('Could not get exact location:', e);
+            // Continue without exact location
+        }
+        
+        // Send emergency alert to backend
+        const response = await fetch('/api/emergency/danger', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                location: location
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const smsSent = data.sms_sent || 0;
+            const telegramSent = data.telegram_sent || 0;
+            const totalSent = smsSent + telegramSent;
+            
+            let successMsg = `✅ EMERGENCY ALERT SENT!\n`;
+            if (smsSent > 0) successMsg += `📱 SMS to ${smsSent} contact(s)\n`;
+            if (telegramSent > 0) successMsg += `💬 Telegram to ${telegramSent} contact(s)`;
+            
+            showDashboardContactFeedback(successMsg, 'success');
+            
+            // Show confirmation for 3 seconds
+            if (button) {
+                button.textContent = '✅ Sent!';
+                setTimeout(() => {
+                    if (button) {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }
+                }, 3000);
+            }
+        } else {
+            showDashboardContactFeedback(`❌ ${data.message || 'Failed to send emergency alert'}`, 'error');
+            if (button) {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+    } catch (error) {
+        console.error('Emergency danger alert failed:', error);
+        showDashboardContactFeedback(`❌ Error: ${error.message || 'Could not send emergency alert'}`, 'error');
+        if (button) {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    }
+}
+
 function updateRepeatSharingStatus(message, isRunning = false) {
     const statusNode = document.getElementById('repeat-sharing-status');
     const startButton = document.getElementById('start-repeat-sharing-btn');
@@ -1121,15 +1190,50 @@ function stopRepeatSharing() {
     updateRepeatSharingStatus('Frequent sharing is off.', false);
 }
 
+function loadContactsFromBackend() {
+    /**Load contacts from backend database and sync with local storage*/
+    fetch('/api/contacts', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' && data.contacts) {
+            // Convert backend format to local format
+            const contacts = data.contacts.map(c => ({
+                id: c.id,
+                name: c.name,
+                phone: c.phone,
+                telegram_chat_id: c.telegram_chat_id || c.telegramChatId || '',
+                telegramChatId: c.telegram_chat_id || c.telegramChatId || ''
+            }));
+            
+            // Save to local storage
+            saveDashboardContacts(contacts);
+            renderDashboardContacts();
+        }
+    })
+    .catch(error => {
+        console.warn('Could not load contacts from backend:', error);
+        // Fall back to localStorage if backend fails
+    });
+}
+
 function initializeDashboardContacts() {
     const form = document.getElementById('dashboard-contact-form');
     const listNode = document.getElementById('dashboard-contact-list');
     const shareButton = document.getElementById('share-live-location-btn');
     const emergencyButton = document.getElementById('send-emergency-message-btn');
+    const dangerButton = document.getElementById('emergency-danger-btn');
     const startRepeatButton = document.getElementById('start-repeat-sharing-btn');
     const stopRepeatButton = document.getElementById('stop-repeat-sharing-btn');
     const refreshTelegramButton = document.getElementById('refresh-telegram-chats-btn');
 
+    // Load contacts from backend database
+    loadContactsFromBackend();
+    
     renderDashboardContacts();
     renderDiscoveredTelegramChats([]);
     updateRepeatSharingStatus('Frequent sharing is off.', false);
@@ -1154,13 +1258,46 @@ function initializeDashboardContacts() {
             return;
         }
 
-        const contacts = getDashboardContacts();
-        contacts.push({ name, phone, telegramChatId });
-        saveDashboardContacts(contacts);
-        renderDashboardContacts();
+        // Save to backend database
+        fetch('/api/contacts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                telegram_chat_id: telegramChatId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Also update local storage for offline compatibility
+                const contacts = getDashboardContacts();
+                contacts.push({
+                    id: data.contact.id,
+                    name: data.contact.name,
+                    phone: data.contact.phone,
+                    telegramChatId: data.contact.telegram_chat_id,
+                    telegram_chat_id: data.contact.telegram_chat_id
+                });
+                saveDashboardContacts(contacts);
+                renderDashboardContacts();
+                form.reset();
+                showDashboardContactFeedback(`${name} was added to trusted contacts.`, 'success');
+            } else {
+                showDashboardContactFeedback(data.message || 'Failed to add contact', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error adding contact:', error);
+            showDashboardContactFeedback('Error adding contact. Please try again.', 'error');
+        });
+    });
 
-        form.reset();
-        showDashboardContactFeedback(`${name} was added to trusted contacts.`, 'success');
+    dangerButton?.addEventListener('click', async function() {
+        await sendEmergencyDangerAlert();
     });
 
     shareButton?.addEventListener('click', function() {
@@ -1198,10 +1335,38 @@ function initializeDashboardContacts() {
         }
 
         if (actionButton.dataset.dashboardContactAction === 'remove') {
-            contacts.splice(contactIndex, 1);
-            saveDashboardContacts(contacts);
-            renderDashboardContacts();
-            showDashboardContactFeedback(`${selectedContact.name} was removed.`, 'success');
+            const contactId = selectedContact.id;
+            
+            // Delete from database if it has an ID
+            if (contactId) {
+                fetch(`/api/contacts/${contactId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        contacts.splice(contactIndex, 1);
+                        saveDashboardContacts(contacts);
+                        renderDashboardContacts();
+                        showDashboardContactFeedback(`${selectedContact.name} was removed.`, 'success');
+                    } else {
+                        showDashboardContactFeedback(data.message || 'Failed to remove contact', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error removing contact:', error);
+                    showDashboardContactFeedback('Error removing contact. Please try again.', 'error');
+                });
+            } else {
+                // No backend ID, just remove from local storage
+                contacts.splice(contactIndex, 1);
+                saveDashboardContacts(contacts);
+                renderDashboardContacts();
+                showDashboardContactFeedback(`${selectedContact.name} was removed.`, 'success');
+            }
             return;
         }
 
@@ -1830,6 +1995,157 @@ function updateQueueCount() {
     } catch (error) {
         console.error('Unable to read queue status:', error);
     }
+}
+
+// ==================== QUICK ACTION FUNCTIONS ====================
+
+/**
+ * Single-tap to share location to all trusted contacts
+ */
+function quickShareLocation() {
+    const btn = document.getElementById('quick-share-location-btn');
+    btn.disabled = true;
+    btn.textContent = '📍 Getting location...';
+    
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        btn.disabled = false;
+        btn.textContent = '📍 Share Location';
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        position => {
+            const location = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+            
+            fetch('/api/quick/share-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ location: location })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    btn.style.background = '#2ecc71';
+                    btn.textContent = '✓ Location Shared!';
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.style.background = '';
+                        btn.textContent = '📍 Share Location';
+                    }, 2000);
+                    alert(`Location shared with ${data.contacts.length} contact(s)!`);
+                } else {
+                    alert('Error: ' + data.message);
+                    btn.disabled = false;
+                    btn.textContent = '📍 Share Location';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to share location');
+                btn.disabled = false;
+                btn.textContent = '📍 Share Location';
+            });
+        },
+        error => {
+            console.error('Geolocation error:', error);
+            alert('Unable to get your location. Please enable location services.');
+            btn.disabled = false;
+            btn.textContent = '📍 Share Location';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+/**
+ * Single-tap emergency alert to all trusted contacts
+ */
+function quickSendDanger() {
+    const confirmed = confirm('🚨 EMERGENCY ALERT\n\nThis will immediately notify ALL your trusted contacts that you are in danger.\n\nProceed?');
+    
+    if (!confirmed) return;
+    
+    const btn = document.getElementById('quick-danger-btn');
+    btn.disabled = true;
+    btn.textContent = '🚨 Sending alert...';
+    
+    // Get location if available
+    let locationDone = false;
+    let location = {};
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                location = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                locationDone = true;
+                sendDangerAlert(location, btn);
+            },
+            error => {
+                locationDone = true;
+                sendDangerAlert({}, btn);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
+        
+        // Timeout - send alert even if location fails
+        setTimeout(() => {
+            if (!locationDone) {
+                locationDone = true;
+                sendDangerAlert({}, btn);
+            }
+        }, 5000);
+    } else {
+        sendDangerAlert({}, btn);
+    }
+}
+
+function sendDangerAlert(location, btn) {
+    fetch('/api/quick/danger-alert', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ location: location })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            btn.style.background = '#e74c3c';
+            btn.textContent = '🚨 ALERT SENT!';
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.style.background = '';
+                btn.textContent = '🚨 I\'m in Danger!';
+            }, 3000);
+            alert(`🚨 EMERGENCY ALERT SENT!\n\nNotified ${data.contacts.length} contact(s):\n${data.contacts.join(', ')}`);
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.textContent = '🚨 I\'m in Danger!';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send emergency alert');
+        btn.disabled = false;
+        btn.textContent = '🚨 I\'m in Danger!';
+    });
 }
 </script>
 {% endblock %}

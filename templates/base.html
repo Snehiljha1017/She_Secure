@@ -17,22 +17,8 @@
     <nav class="navbar" id="navbar">
         <div class="container nav-inner">
             <a class="brand navbar-logo" href="{{ url_for('landing') }}">
-                <span class="navbar-logo-mark" aria-hidden="true">
-                    <svg viewBox="0 0 48 48" role="img" focusable="false">
-                        <defs>
-                            <linearGradient id="navbarLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#ffffff" />
-                                <stop offset="100%" stop-color="#dbe7ff" />
-                            </linearGradient>
-                            <linearGradient id="navbarInnerShield" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#7c83ff" />
-                                <stop offset="100%" stop-color="#4f46e5" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M24 4L36 9V21C36 31 30.8 39 24 43C17.2 39 12 31 12 21V9L24 4Z" fill="url(#navbarLogoGradient)"/>
-                        <path d="M24 8L32 11.5V21C32 28.1 28.5 34.1 24 37C19.5 34.1 16 28.1 16 21V11.5L24 8Z" fill="url(#navbarInnerShield)"/>
-                        <path d="M19 22.5L22.2 25.7L29 18.8" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    </svg>
+                <span class="navbar-logo-mark" aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px);">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SheSecure" style="width: 32px; height: auto; object-fit: contain;">
                 </span>
                 <span class="navbar-logo-text">SheSecure</span>
             </a>
