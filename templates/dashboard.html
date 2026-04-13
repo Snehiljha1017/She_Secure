@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Dashboard - SheSecure{% endblock %}
 
@@ -66,10 +66,10 @@
                 </button>
                 <div class="dashboard-actions">
                     <button type="button" class="btn btn-primary" id="quick-share-location-btn" onclick="quickShareLocation()">
-                        📍 Share Location
+                        ðŸ“ Share Location
                     </button>
                     <button type="button" class="btn btn-danger" id="quick-danger-btn" onclick="quickSendDanger()">
-                        🚨 I'm in Danger!
+                        ðŸš¨ I'm in Danger!
                     </button>
                     <button type="button" class="btn btn-primary" data-emergency-action="call" data-emergency-number="112">
                         Call 112
@@ -93,15 +93,28 @@
                     <button type="submit" class="btn btn-primary">Add Contact</button>
                 </form>
 
+                <div class="dashboard-telegram-panel">
+                    <div class="dashboard-telegram-head">
+                        <div>
+                            <strong>Telegram discovery</strong>
+                            <p>Ask a trusted contact to open your bot and tap <code>/start</code>, then copy the chat ID here.</p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="refresh-telegram-chats-btn">
+                            Find Telegram Contacts
+                        </button>
+                    </div>
+                    <div id="telegram-discovered-list" class="telegram-discovered-list"></div>
+                </div>
+
                 <div class="dashboard-contact-actions">
                     <button type="button" class="btn btn-danger" id="emergency-danger-btn" style="font-size: 18px; padding: 15px; flex: 1; background: linear-gradient(135deg, #ff4757 0%, #ee5a6f 100%); border: 2px solid #ff0000;">
-                        🚨 I'M IN DANGER (Send to All)
+                        ðŸš¨ I'M IN DANGER (Send to All)
                     </button>
                 </div>
 
                 <div class="dashboard-contact-actions">
                     <button type="button" class="btn btn-secondary" id="share-live-location-btn">
-                        📍 Share Live Location
+                        ðŸ“ Share Live Location
                     </button>
                     <button type="button" class="btn btn-primary" id="send-emergency-message-btn">
                         Send Emergency Message
@@ -255,46 +268,46 @@
                 </div>
                 <div class="features-grid">
                     <a href="{{ url_for('predictor') }}" class="feature-card feature-card-risk">
-                        <div class="feature-icon feature-icon-risk">📊</div>
+                        <div class="feature-icon feature-icon-risk">ðŸ“Š</div>
                         <h3>Check Your Safety Risk</h3>
                         <p>Quick assessment based on location, area conditions and travel patterns.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                     <a href="{{ url_for('location') }}" class="feature-card feature-card-location">
-                        <div class="feature-icon feature-icon-location">📍</div>
+                        <div class="feature-icon feature-icon-location">ðŸ“</div>
                         <h3>Share Live Location</h3>
                         <p>Send real-time coordinates to trusted contacts or emergency responders.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                     <a href="{{ url_for('helplines') }}" class="feature-card feature-card-helpline">
-                        <div class="feature-icon feature-icon-helpline">📞</div>
+                        <div class="feature-icon feature-icon-helpline">ðŸ“ž</div>
                         <h3>Find Emergency Support</h3>
                         <p>Access official helplines, hotlines, and support numbers instantly.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                     <a href="{{ url_for('chatbot') }}" class="feature-card feature-card-chat">
-                        <div class="feature-icon feature-icon-chat">💬</div>
+                        <div class="feature-icon feature-icon-chat">ðŸ’¬</div>
                         <h3>Get Instant Advice</h3>
                         <p>Chat with our AI to get safety tips, guidance and next-step actions.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                     <a href="{{ url_for('counselling') }}" class="feature-card feature-card-counsel">
-                        <div class="feature-icon feature-icon-counsel">🤝</div>
+                        <div class="feature-icon feature-icon-counsel">ðŸ¤</div>
                         <h3>Access Counselling</h3>
                         <p>Get professional support, resources, and mental wellness guidance.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                     <a href="{{ url_for('crime_data') }}" class="feature-card feature-card-analytics">
-                        <div class="feature-icon feature-icon-analytics">📈</div>
+                        <div class="feature-icon feature-icon-analytics">ðŸ“ˆ</div>
                         <h3>Explore Safety Data</h3>
                         <p>Deep dive into crime statistics and predictive insights for your area.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                     <a href="{{ url_for('messaging') }}" class="feature-card feature-card-messaging">
-                        <div class="feature-icon feature-icon-messaging">💬📱</div>
+                        <div class="feature-icon feature-icon-messaging">ðŸ’¬ðŸ“±</div>
                         <h3>Emergency Messaging</h3>
                         <p>Instant real-time communication with trusted contacts. No delays.</p>
-                        <span class="feature-arrow">Start →</span>
+                        <span class="feature-arrow">Start â†’</span>
                     </a>
                 </div>
             </section>
@@ -1042,20 +1055,40 @@ async function sendEmergencyDangerAlert() {
     const contacts = getDashboardContacts();
     
     if (!contacts.length) {
-        showDashboardContactFeedback('❌ No trusted contacts saved. Add at least one contact first!', 'error');
+        showDashboardContactFeedback('âŒ No trusted contacts saved. Add at least one contact first!', 'error');
         return;
     }
 
     const button = document.getElementById('emergency-danger-btn');
-    const originalText = button?.textContent || '🚨 I\'M IN DANGER';
+    const originalText = button?.textContent || 'ðŸš¨ I\'M IN DANGER';
     
     try {
         // Disable button and show loading state
         if (button) {
             button.disabled = true;
-            button.textContent = '⏳ Sending...';
+            button.textContent = 'â³ Sending...';
         }
         
+        if (typeof sendLocationAndEmergencyAlerts === 'function') {
+            try {
+                const result = await sendLocationAndEmergencyAlerts(contacts);
+                const locationMessage = result?.locationResult?.message || 'Live location started where available.';
+                const emergencyMessage = result?.emergencyResult?.message || 'Emergency alert sent to trusted contacts.';
+                showDashboardContactFeedback(`${locationMessage} ${emergencyMessage}`, 'success');
+                if (button) {
+                    button.textContent = '✓ Sent!';
+                    setTimeout(() => {
+                        if (button) {
+                            button.textContent = originalText;
+                            button.disabled = false;
+                        }
+                    }, 3000);
+                }
+                return;
+            } catch (helperError) {
+                console.warn('Telegram-aware emergency helper failed, falling back to backend route:', helperError);
+            }
+        }
         // Get current location
         let location = { lat: null, lon: null };
         try {
@@ -1084,15 +1117,15 @@ async function sendEmergencyDangerAlert() {
             const telegramSent = data.telegram_sent || 0;
             const totalSent = smsSent + telegramSent;
             
-            let successMsg = `✅ EMERGENCY ALERT SENT!\n`;
-            if (smsSent > 0) successMsg += `📱 SMS to ${smsSent} contact(s)\n`;
-            if (telegramSent > 0) successMsg += `💬 Telegram to ${telegramSent} contact(s)`;
+            let successMsg = `âœ… EMERGENCY ALERT SENT!\n`;
+            if (smsSent > 0) successMsg += `ðŸ“± SMS to ${smsSent} contact(s)\n`;
+            if (telegramSent > 0) successMsg += `ðŸ’¬ Telegram to ${telegramSent} contact(s)`;
             
             showDashboardContactFeedback(successMsg, 'success');
             
             // Show confirmation for 3 seconds
             if (button) {
-                button.textContent = '✅ Sent!';
+                button.textContent = 'âœ… Sent!';
                 setTimeout(() => {
                     if (button) {
                         button.textContent = originalText;
@@ -1101,7 +1134,7 @@ async function sendEmergencyDangerAlert() {
                 }, 3000);
             }
         } else {
-            showDashboardContactFeedback(`❌ ${data.message || 'Failed to send emergency alert'}`, 'error');
+            showDashboardContactFeedback(`âŒ ${data.message || 'Failed to send emergency alert'}`, 'error');
             if (button) {
                 button.textContent = originalText;
                 button.disabled = false;
@@ -1109,7 +1142,7 @@ async function sendEmergencyDangerAlert() {
         }
     } catch (error) {
         console.error('Emergency danger alert failed:', error);
-        showDashboardContactFeedback(`❌ Error: ${error.message || 'Could not send emergency alert'}`, 'error');
+        showDashboardContactFeedback(`âŒ Error: ${error.message || 'Could not send emergency alert'}`, 'error');
         if (button) {
             button.textContent = originalText;
             button.disabled = false;
@@ -2005,12 +2038,51 @@ function updateQueueCount() {
 function quickShareLocation() {
     const btn = document.getElementById('quick-share-location-btn');
     btn.disabled = true;
-    btn.textContent = '📍 Getting location...';
+    btn.textContent = 'ðŸ“ Getting location...';
     
+    if (typeof shareDashboardLocation === 'function') {
+        Promise.resolve(shareDashboardLocation(getDashboardContacts()))
+            .then(() => {
+                btn.style.background = '#2ecc71';
+                btn.textContent = 'Location Shared!';
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.style.background = '';
+                    btn.textContent = 'Share Location';
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'Failed to share location');
+                btn.disabled = false;
+                btn.textContent = 'Share Location';
+            });
+        return;
+    }
+    if (typeof shareDashboardLocation === 'function') {
+        (async () => {
+            try {
+                await shareDashboardLocation(getDashboardContacts());
+                btn.style.background = '#2ecc71';
+                btn.textContent = '✓ Location Shared!';
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.style.background = '';
+                    btn.textContent = '📍 Share Location';
+                }, 2000);
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Failed to share location');
+                btn.disabled = false;
+                btn.textContent = '📍 Share Location';
+            }
+        })();
+        return;
+    }
     if (!navigator.geolocation) {
         alert('Geolocation is not supported by your browser');
         btn.disabled = false;
-        btn.textContent = '📍 Share Location';
+        btn.textContent = 'ðŸ“ Share Location';
         return;
     }
     
@@ -2032,31 +2104,31 @@ function quickShareLocation() {
             .then(data => {
                 if (data.status === 'success') {
                     btn.style.background = '#2ecc71';
-                    btn.textContent = '✓ Location Shared!';
+                    btn.textContent = 'âœ“ Location Shared!';
                     setTimeout(() => {
                         btn.disabled = false;
                         btn.style.background = '';
-                        btn.textContent = '📍 Share Location';
+                        btn.textContent = 'ðŸ“ Share Location';
                     }, 2000);
                     alert(`Location shared with ${data.contacts.length} contact(s)!`);
                 } else {
                     alert('Error: ' + data.message);
                     btn.disabled = false;
-                    btn.textContent = '📍 Share Location';
+                    btn.textContent = 'ðŸ“ Share Location';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Failed to share location');
                 btn.disabled = false;
-                btn.textContent = '📍 Share Location';
+                btn.textContent = 'ðŸ“ Share Location';
             });
         },
         error => {
             console.error('Geolocation error:', error);
             alert('Unable to get your location. Please enable location services.');
             btn.disabled = false;
-            btn.textContent = '📍 Share Location';
+            btn.textContent = 'ðŸ“ Share Location';
         },
         {
             enableHighAccuracy: true,
@@ -2070,14 +2142,44 @@ function quickShareLocation() {
  * Single-tap emergency alert to all trusted contacts
  */
 function quickSendDanger() {
-    const confirmed = confirm('🚨 EMERGENCY ALERT\n\nThis will immediately notify ALL your trusted contacts that you are in danger.\n\nProceed?');
+    const confirmed = confirm('ðŸš¨ EMERGENCY ALERT\n\nThis will immediately notify ALL your trusted contacts that you are in danger.\n\nProceed?');
     
     if (!confirmed) return;
     
     const btn = document.getElementById('quick-danger-btn');
     btn.disabled = true;
-    btn.textContent = '🚨 Sending alert...';
+    btn.textContent = 'ðŸš¨ Sending alert...';
     
+    if (typeof sendLocationAndEmergencyAlerts === 'function') {
+        (async () => {
+            try {
+                const contacts = getDashboardContacts();
+                if (!contacts.length) {
+                    showDashboardContactFeedback('No trusted contacts saved. Add at least one contact first!', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Send alert...';
+                    return;
+                }
+
+                const result = await sendLocationAndEmergencyAlerts(contacts);
+                const successMsg = result?.emergencyResult?.message || 'Emergency alert sent to trusted contacts.';
+                showDashboardContactFeedback(successMsg, 'success');
+                btn.style.background = '#e74c3c';
+                btn.textContent = 'Alert Sent!';
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.style.background = '';
+                    btn.textContent = 'Send alert...';
+                }, 3000);
+            } catch (error) {
+                console.error('Error:', error);
+                showDashboardContactFeedback(error.message || 'Failed to send emergency alert', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Send alert...';
+            }
+        })();
+        return;
+    }
     // Get location if available
     let locationDone = false;
     let location = {};
@@ -2127,25 +2229,29 @@ function sendDangerAlert(location, btn) {
     .then(data => {
         if (data.status === 'success') {
             btn.style.background = '#e74c3c';
-            btn.textContent = '🚨 ALERT SENT!';
+            btn.textContent = 'ðŸš¨ ALERT SENT!';
             setTimeout(() => {
                 btn.disabled = false;
                 btn.style.background = '';
-                btn.textContent = '🚨 I\'m in Danger!';
+                btn.textContent = 'ðŸš¨ I\'m in Danger!';
             }, 3000);
-            alert(`🚨 EMERGENCY ALERT SENT!\n\nNotified ${data.contacts.length} contact(s):\n${data.contacts.join(', ')}`);
+            alert(`ðŸš¨ EMERGENCY ALERT SENT!\n\nNotified ${data.contacts.length} contact(s):\n${data.contacts.join(', ')}`);
         } else {
             alert('Error: ' + data.message);
             btn.disabled = false;
-            btn.textContent = '🚨 I\'m in Danger!';
+            btn.textContent = 'ðŸš¨ I\'m in Danger!';
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to send emergency alert');
         btn.disabled = false;
-        btn.textContent = '🚨 I\'m in Danger!';
+        btn.textContent = 'ðŸš¨ I\'m in Danger!';
     });
 }
 </script>
 {% endblock %}
+
+
+
+

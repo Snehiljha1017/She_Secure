@@ -17,7 +17,7 @@
             <div class="contacts-list">
                 {% if contacts %}
                     {% for contact in contacts %}
-                    <div class="contact-item" onclick="selectContact({{ contact.id }}, '{{ contact.name }}')">
+                    <div class="contact-item" onclick="selectContact({{ contact.id }}, {{ contact.name|tojson }}, this)">
                         <div class="contact-avatar">{{ contact.name[0].upper() }}</div>
                         <div class="contact-info">
                             <div class="contact-name">{{ contact.name }}</div>
@@ -703,7 +703,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function selectContact(contactId, contactName) {
+function getSelectedContact() {
+    const contacts = typeof loadContactsList === 'function' ? loadContactsList() : [];
+    return contacts.find(contact => String(contact.id) === String(currentContactId)) || null;
+}
+
+function isTelegramContact(contact) {
+    return Boolean(contact && (contact.telegram_chat_id || contact.telegramChatId));
+}
+
+function selectContact(contactId, contactName, element) {
     currentContactId = contactId;
     currentContactName = contactName;
     
@@ -711,7 +720,9 @@ function selectContact(contactId, contactName) {
     document.querySelectorAll('.contact-item').forEach(item => {
         item.classList.remove('active');
     });
-    event.currentTarget.classList.add('active');
+    if (element) {
+        element.classList.add('active');
+    }
     
     document.getElementById('chat-title').textContent = contactName;
     document.getElementById('message-input').disabled = false;
@@ -799,6 +810,18 @@ function sendMessage() {
     if (!messageText) return;
     
     const isEmergency = document.getElementById('emergency-checkbox').checked;
+    const contact = getSelectedContact();
+
+    if (contact && isTelegramContact(contact) && typeof sendTrustedContactAlert === 'function') {
+        sendTrustedContactAlert({
+            contacts: [contact],
+            message: messageText,
+            location: null,
+            mode: isEmergency ? 'emergency' : 'message'
+        }).catch(error => {
+            console.warn('Telegram delivery failed, continuing with local message history:', error);
+        });
+    }
     
     socket.emit('send_instant_message', {
         contact_id: currentContactId,
@@ -823,6 +846,12 @@ function shareLocation() {
                 lat: position.coords.latitude,
                 lon: position.coords.longitude
             };
+
+            const contact = getSelectedContact();
+            if (contact && isTelegramContact(contact) && typeof ensureTelegramLiveShareSession === 'function') {
+                ensureTelegramLiveShareSession([contact], location, buildLiveLocationMessage(location))
+                    .catch(error => console.warn('Telegram live location failed:', error));
+            }
             
             socket.emit('send_instant_message', {
                 contact_id: currentContactId,
@@ -853,20 +882,48 @@ function confirmEmergencyAlert() {
         alert('Please select at least one contact');
         return;
     }
+
+    const contacts = (typeof loadContactsList === 'function' ? loadContactsList() : [])
+        .filter(contact => contactIds.includes(Number(contact.id)));
     
     if (includeLocation && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
+            const location = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+
+            if (contacts.some(isTelegramContact) && typeof ensureTelegramLiveShareSession === 'function') {
+                ensureTelegramLiveShareSession(contacts, location, buildLiveLocationMessage(location))
+                    .catch(error => console.warn('Telegram live location failed:', error));
+            }
+
+            if (typeof sendTrustedContactAlert === 'function') {
+                sendTrustedContactAlert({
+                    contacts,
+                    message,
+                    location,
+                    mode: 'emergency'
+                }).catch(error => console.warn('Telegram emergency delivery failed:', error));
+            }
+
             socket.emit('emergency_alert', {
                 message: message,
-                location: {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude
-                },
+                location: location,
                 contact_ids: contactIds
             });
             closeEmergencyModal();
         });
     } else {
+        if (typeof sendTrustedContactAlert === 'function') {
+            sendTrustedContactAlert({
+                contacts,
+                message,
+                location: null,
+                mode: 'emergency'
+            }).catch(error => console.warn('Telegram emergency delivery failed:', error));
+        }
+
         socket.emit('emergency_alert', {
             message: message,
             location: {},

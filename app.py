@@ -175,6 +175,69 @@ def telegram_api_get(method_name, query=None):
         raise RuntimeError(f"Could not reach Telegram: {exc.reason}") from exc
 
 
+def get_contact_telegram_chat_id(contact):
+    """Return a Telegram chat ID from either a model object or a dict."""
+    if isinstance(contact, dict):
+        return str(contact.get("telegram_chat_id") or contact.get("telegramChatId") or "").strip()
+
+    return str(getattr(contact, "telegram_chat_id", "") or "").strip()
+
+
+def build_telegram_location_suffix(location):
+    """Append a map link when a coordinate pair is available."""
+    if not isinstance(location, dict):
+        return ""
+
+    lat = location.get("lat")
+    lon = location.get("lon")
+    if lat is None or lon is None:
+        return ""
+
+    return (
+        f"\n\n📍 Location: {lat}, {lon}"
+        f"\n🗺️ https://maps.google.com/?q={lat},{lon}"
+    )
+
+
+def build_telegram_message_text(message, location=None):
+    """Combine the caller's text with location details when available."""
+    base_message = str(message or "").strip()
+    location_suffix = build_telegram_location_suffix(location)
+
+    if not location_suffix:
+        return base_message
+
+    if "maps.google.com" in base_message or "Location:" in base_message:
+        return base_message
+
+    return f"{base_message}{location_suffix}"
+
+
+def send_telegram_live_location(contact, location, intro_message=None, live_period=3600):
+    """Send a live Telegram location pin, optionally preceded by a text note."""
+    chat_id = get_contact_telegram_chat_id(contact)
+    if not chat_id:
+        raise RuntimeError("Missing Telegram chat ID.")
+
+    lat = location.get("lat") if isinstance(location, dict) else None
+    lon = location.get("lon") if isinstance(location, dict) else None
+    if lat is None or lon is None:
+        raise RuntimeError("Live location coordinates are required.")
+
+    if intro_message:
+        telegram_api_request("sendMessage", {
+            "chat_id": chat_id,
+            "text": str(intro_message).strip()
+        })
+
+    return telegram_api_request("sendLocation", {
+        "chat_id": chat_id,
+        "latitude": lat,
+        "longitude": lon,
+        "live_period": live_period
+    })
+
+
 def sms_gateway_configured():
     """Check whether Twilio SMS credentials are available."""
     settings = load_sms_gateway_settings()
@@ -1175,6 +1238,7 @@ def send_telegram_message():
         data = request.get_json() or {}
         contacts = data.get("contacts", [])
         message = data.get("message", "").strip()
+        location = data.get("location", {})
 
         if not contacts:
             return jsonify({"status": "error", "message": "No Telegram contacts were provided."}), 400
@@ -1185,7 +1249,7 @@ def send_telegram_message():
         failed = []
 
         for contact in contacts:
-            chat_id = str(contact.get("telegram_chat_id") or contact.get("telegramChatId") or "").strip()
+            chat_id = get_contact_telegram_chat_id(contact)
             name = contact.get("name", "Trusted Contact")
             if not chat_id:
                 failed.append({"name": name, "error": "Missing Telegram chat ID."})
@@ -1194,7 +1258,7 @@ def send_telegram_message():
             try:
                 result = telegram_api_request("sendMessage", {
                     "chat_id": chat_id,
-                    "text": message
+                    "text": build_telegram_message_text(message, location)
                 })
                 sent.append({
                     "name": name,
@@ -1286,7 +1350,7 @@ def start_telegram_live():
         failed = []
 
         for contact in contacts:
-            chat_id = str(contact.get("telegram_chat_id") or contact.get("telegramChatId") or "").strip()
+            chat_id = get_contact_telegram_chat_id(contact)
             name = contact.get("name", "Trusted Contact")
             if not chat_id:
                 failed.append({"name": name, "error": "Missing Telegram chat ID."})
